@@ -96,6 +96,7 @@
     z-index: 40;
   }
   .topbar-title { font-size: 17px; font-weight: 600; }
+  .hamburger { display: none; background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text); margin-right: 12px; padding: 0; line-height: 1; }
   .topbar-right { display: flex; align-items: center; gap: 12px; }
 
   .btn {
@@ -335,12 +336,26 @@
 
   /* Responsive */
   @media (max-width: 768px) {
-    .sidebar { display: none; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      z-index: 60;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 55;
+    }
+    .sidebar-overlay.show { display: block; }
     .main { margin-left: 0; }
+    .hamburger { display: block !important; }
     .content { padding: 16px; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .detail-grid { grid-template-columns: 1fr; }
     .hide-mobile { display: none; }
+    .topbar-title { font-size: 15px; }
   }
 </style>
 </head>
@@ -348,8 +363,11 @@
 
 <div class="layout">
 
+  <!-- Overlay สำหรับปิด sidebar บนมือถือ -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div style="font-size:22px;margin-bottom:6px">🔧</div>
       <div class="brand">OXISO Maintenance</div>
@@ -389,6 +407,7 @@
   <!-- Main -->
   <main class="main">
     <div class="topbar">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="เมนู">☰</button>
       <div class="topbar-title" id="pageTitle">📊 Dashboard ภาพรวม</div>
       <div class="topbar-right">
         <button class="btn" onclick="loadData()">🔄 รีเฟรช</button>
@@ -458,7 +477,7 @@
         <div class="stats-grid" id="prStatsGrid">
           <div class="stat-card total"><div class="stat-icon">🛒</div><div class="stat-num" id="prTotal">0</div><div class="stat-label">ทั้งหมด</div></div>
           <div class="stat-card pending"><div class="stat-icon">⏳</div><div class="stat-num" id="prPending">0</div><div class="stat-label">รออนุมัติ</div></div>
-          <div class="stat-card done"><div class="stat-icon">✅</div><div class="stat-num" id="prApproved">0</div><div class="stat-label">อนุมัติแล้ว</div></div>
+          <div class="stat-card done"><div class="stat-icon">✅</div><div class="stat-num" id="prApproved">0</div><div class="stat-label">รับเข้าคลัง</div></div>
           <div class="stat-card inprog"><div class="stat-icon">💰</div><div class="stat-num" id="prAmount" style="font-size:22px">฿0</div><div class="stat-label">ยอดรออนุมัติ</div></div>
         </div>
 
@@ -466,9 +485,12 @@
           <select id="prFilterStatus" onchange="renderPurchaseTable()">
             <option value="">สถานะทั้งหมด</option>
             <option>รออนุมัติ</option>
-            <option>อนุมัติแล้ว</option>
-            <option>สั่งซื้อแล้ว</option>
-            <option>ได้รับของ</option>
+            <option>ตรวจสอบราคา</option>
+            <option>เปิด PR แล้ว</option>
+            <option>ส่ง PO แล้ว</option>
+            <option>ได้รับของ รอตรวจรับ</option>
+            <option>ตรวจรับสินค้าแล้ว</option>
+            <option>รับเข้าคลัง</option>
             <option>ไม่อนุมัติ</option>
           </select>
           <input type="text" id="prFilterSearch" placeholder="🔍 ค้นหา..." oninput="renderPurchaseTable()" style="min-width:180px">
@@ -561,9 +583,12 @@
       <label>สถานะ</label>
       <select id="prUpdateStatus">
         <option>รออนุมัติ</option>
-        <option>อนุมัติแล้ว</option>
-        <option>สั่งซื้อแล้ว</option>
-        <option>ได้รับของ</option>
+        <option>ตรวจสอบราคา</option>
+        <option>เปิด PR แล้ว</option>
+        <option>ส่ง PO แล้ว</option>
+        <option>ได้รับของ รอตรวจรับ</option>
+        <option>ตรวจรับสินค้าแล้ว</option>
+        <option>รับเข้าคลัง</option>
         <option>ไม่อนุมัติ</option>
       </select>
     </div>
@@ -817,10 +842,21 @@ function showFieldMsg(el, text, ok) {
   el.style.display = 'block';
 }
 
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('show');
+}
+
 function showView(view) {
   currentView = view;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+  // ปิด sidebar อัตโนมัติบนมือถือหลังเลือกเมนู
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('open')) toggleSidebar();
 
   const isPurchase = (view === 'purchase' || view === 'pr_pending');
   document.getElementById('repairSection').style.display = isPurchase ? 'none' : 'block';
@@ -873,17 +909,17 @@ async function loadPurchases() {
 function renderPrStats() {
   const total = allPurchases.length;
   const pending = allPurchases.filter(p => p['สถานะ'] === 'รออนุมัติ').length;
-  const approved = allPurchases.filter(p => p['สถานะ'] === 'อนุมัติแล้ว').length;
+  const done = allPurchases.filter(p => p['สถานะ'] === 'รับเข้าคลัง').length;
   const amount = allPurchases
     .filter(p => p['สถานะ'] === 'รออนุมัติ')
     .reduce((sum, p) => sum + (parseFloat(p['รวมเงิน']) || 0), 0);
   document.getElementById('prTotal').textContent = total;
   document.getElementById('prPending').textContent = pending;
-  document.getElementById('prApproved').textContent = approved;
+  document.getElementById('prApproved').textContent = done;
   document.getElementById('prAmount').textContent = '฿' + amount.toLocaleString('th-TH');
 }
 
-const prStatusClass = { 'รออนุมัติ':'s-wait', 'อนุมัติแล้ว':'s-done', 'สั่งซื้อแล้ว':'s-prog', 'ได้รับของ':'s-prog', 'ไม่อนุมัติ':'s-cancel' };
+const prStatusClass = { 'รออนุมัติ':'s-wait', 'ตรวจสอบราคา':'s-wait', 'เปิด PR แล้ว':'s-prog', 'ส่ง PO แล้ว':'s-prog', 'ได้รับของ รอตรวจรับ':'s-prog', 'ตรวจรับสินค้าแล้ว':'s-prog', 'รับเข้าคลัง':'s-done', 'ไม่อนุมัติ':'s-cancel' };
 
 function renderPurchaseTable() {
   const status = document.getElementById('prFilterStatus').value;
@@ -960,15 +996,18 @@ async function savePrUpdate() {
 
   if (!password) { showFieldMsg(msg, 'กรุณากรอกรหัสผ่าน', false); return; }
 
-  // Demo mode — เฉพาะ 9999 (หัวหน้า) อนุมัติได้
+  // Demo mode — รหัส 1234/5678 = ทั่วไป, 9999 = หัวหน้า
   if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
-    const approveUsers = { '9999':'คุณทนภัทร' };
-    if (!approveUsers[password]) {
-      showFieldMsg(msg, '❌ รหัสนี้ไม่มีสิทธิ์อนุมัติ (เฉพาะหัวหน้า — ลองรหัส 9999)', false);
+    const allUsers = { '1234':'วิชาญ เครื่องดี', '5678':'สมหมาย แข็งแรง', '9999':'คุณทนภัทร' };
+    const headUsers = { '9999':'คุณทนภัทร' };
+    const APPROVE_STATUSES = ['ตรวจสอบราคา', 'เปิด PR แล้ว', 'ไม่อนุมัติ'];
+    if (!allUsers[password]) { showFieldMsg(msg, '❌ รหัสผ่านไม่ถูกต้อง', false); return; }
+    if (APPROVE_STATUSES.includes(status) && !headUsers[password]) {
+      showFieldMsg(msg, '❌ สถานะนี้ต้องให้หัวหน้าอนุมัติ (ลองรหัส 9999)', false);
       return;
     }
     const idx = allPurchases.findIndex(p => p['เลขที่ PR'] === currentPR['เลขที่ PR']);
-    if (idx >= 0) { allPurchases[idx]['สถานะ'] = status; allPurchases[idx]['ผู้อนุมัติ'] = approveUsers[password]; }
+    if (idx >= 0) { allPurchases[idx]['สถานะ'] = status; allPurchases[idx]['ผู้อนุมัติ'] = allUsers[password]; }
     closePrModal();
     renderPrStats();
     renderPurchaseTable();
@@ -992,8 +1031,8 @@ async function savePrUpdate() {
 function getDemoPurchases() {
   return [
     { 'เลขที่ PR':'PR-250525-X1A', 'วันที่ขอ':'25/5/2568 10:00', 'ผู้ขอ':'วิชาญ เครื่องดี', 'แผนก':'บำรุงรักษา', 'ประเภท':'อะไหล่เครื่องจักร', 'รายการ':'ไส้กรองลม Air Compressor', 'จำนวน':4, 'หน่วย':'ชิ้น', 'ราคา/หน่วย':850, 'รวมเงิน':3400, 'เหตุผล/ความจำเป็น':'เปลี่ยนไส้กรองตามรอบ AIR-COMP-01 ที่อุดตัน', 'อ้างอิงใบแจ้งซ่อม':'MR-250525-A1B', 'สถานะ':'รออนุมัติ', 'ผู้อนุมัติ':'' },
-    { 'เลขที่ PR':'PR-250524-Y2B', 'วันที่ขอ':'24/5/2568 15:30', 'ผู้ขอ':'สมหมาย แข็งแรง', 'แผนก':'คลังสินค้า', 'ประเภท':'วัสดุสิ้นเปลือง', 'รายการ':'สายพาน Conveyor B-200', 'จำนวน':2, 'หน่วย':'เส้น', 'ราคา/หน่วย':4500, 'รวมเงิน':9000, 'เหตุผล/ความจำเป็น':'สำรองไว้เปลี่ยนสายพานที่สึก', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'อนุมัติแล้ว', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
-    { 'เลขที่ PR':'PR-250523-Z3C', 'วันที่ขอ':'23/5/2568 09:00', 'ผู้ขอ':'ปวีณา รักงาน', 'แผนก':'QC / ตรวจสอบ', 'ประเภท':'เครื่องมือ / อุปกรณ์', 'รายการ':'เกจวัดแรงดัน 0-10 bar', 'จำนวน':3, 'หน่วย':'ตัว', 'ราคา/หน่วย':1200, 'รวมเงิน':3600, 'เหตุผล/ความจำเป็น':'เครื่องมือวัดเดิมเสีย', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'ได้รับของ', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
+    { 'เลขที่ PR':'PR-250524-Y2B', 'วันที่ขอ':'24/5/2568 15:30', 'ผู้ขอ':'สมหมาย แข็งแรง', 'แผนก':'คลังสินค้า', 'ประเภท':'วัสดุสิ้นเปลือง', 'รายการ':'สายพาน Conveyor B-200', 'จำนวน':2, 'หน่วย':'เส้น', 'ราคา/หน่วย':4500, 'รวมเงิน':9000, 'เหตุผล/ความจำเป็น':'สำรองไว้เปลี่ยนสายพานที่สึก', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'เปิด PR แล้ว', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
+    { 'เลขที่ PR':'PR-250523-Z3C', 'วันที่ขอ':'23/5/2568 09:00', 'ผู้ขอ':'ปวีณา รักงาน', 'แผนก':'QC / ตรวจสอบ', 'ประเภท':'เครื่องมือ / อุปกรณ์', 'รายการ':'เกจวัดแรงดัน 0-10 bar', 'จำนวน':3, 'หน่วย':'ตัว', 'ราคา/หน่วย':1200, 'รวมเงิน':3600, 'เหตุผล/ความจำเป็น':'เครื่องมือวัดเดิมเสีย', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'รับเข้าคลัง', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
   ];
 }
 
