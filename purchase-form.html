@@ -122,6 +122,14 @@
   <div class="ticket-id" id="ticketDisplay">---</div>
 </div>
 
+<div id="inappBanner" style="display:none;background:#fca311;color:#1a1a2e;padding:12px 16px;font-size:13px;line-height:1.5;text-align:center">
+  ⚠️ ฟอร์มนี้ทำงานได้ไม่เต็มที่บนเบราว์เซอร์ในแอป LINE<br>
+  <a id="openExternalLink" href="#" style="display:inline-block;margin-top:8px;background:#1a1a2e;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600">
+    👉 แตะเพื่อเปิดในเบราว์เซอร์ปกติ
+  </a>
+  <div style="margin-top:6px;font-size:11px;opacity:0.8">หรือกดเมนู ⋯ มุมขวาบน แล้วเลือก "เปิดในเบราว์เซอร์"</div>
+</div>
+
 <div class="steps">
   <div class="step active" id="step-tab-1"><span class="step-num">1</span>ข้อมูลผู้ขอ</div>
   <div class="step" id="step-tab-2"><span class="step-num">2</span>รายการ</div>
@@ -140,15 +148,7 @@
     <div class="field">
       <label>แผนก / ส่วนงาน <span class="req">*</span></label>
       <select id="department">
-        <option value="">-- เลือกแผนก --</option>
-        <option>ผลิต A</option>
-        <option>ผลิต B</option>
-        <option>ผลิต C</option>
-        <option>QC / ตรวจสอบ</option>
-        <option>บำรุงรักษา</option>
-        <option>คลังสินค้า</option>
-        <option>จัดซื้อ</option>
-        <option>อื่นๆ</option>
+        <option value="">⏳ กำลังโหลดรายการ...</option>
       </select>
     </div>
     <div class="field">
@@ -263,25 +263,49 @@ let prId = generatePrId();
 
 document.getElementById('ticketDisplay').textContent = prId;
 loadOptions();
+detectInAppBrowser();
 
 // แมปคอลัมน์ Sheet → id ของ select
 const OPTION_MAP = { 'แผนก': 'department' };
 const PLACEHOLDER = { 'department': '-- เลือกแผนก --' };
 
 async function loadOptions() {
-  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') return;
+  const setPlaceholder = (text) => {
+    Object.values(OPTION_MAP).forEach(selectId => {
+      const sel = document.getElementById(selectId);
+      if (sel) sel.innerHTML = `<option value="">${text}</option>`;
+    });
+  };
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') { setPlaceholder('-- เลือก --'); return; }
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=options`);
     const opts = await res.json();
-    if (!opts || Object.keys(opts).length === 0) return;
+    if (!opts || Object.keys(opts).length === 0) { setPlaceholder('-- เลือก --'); return; }
     Object.entries(OPTION_MAP).forEach(([col, selectId]) => {
-      const list = opts[col];
-      if (!list || !list.length) return;
       const sel = document.getElementById(selectId);
       if (!sel) return;
+      const list = opts[col];
+      if (!list || !list.length) { sel.innerHTML = `<option value="">${PLACEHOLDER[selectId]}</option>`; return; }
       sel.innerHTML = `<option value="">${PLACEHOLDER[selectId]}</option>` + list.map(v => `<option>${v}</option>`).join('');
     });
-  } catch(e) { console.warn('โหลด dropdown ไม่สำเร็จ:', e); }
+  } catch(e) {
+    console.warn('โหลด dropdown ไม่สำเร็จ:', e);
+    setPlaceholder('⚠️ โหลดไม่สำเร็จ ลองรีเฟรช');
+  }
+}
+
+function detectInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  const isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua);
+  if (!isInApp) return;
+  const banner = document.getElementById('inappBanner');
+  if (banner) banner.style.display = 'block';
+  const link = document.getElementById('openExternalLink');
+  if (link) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('openExternalBrowser', '1');
+    link.href = url.toString();
+  }
 }
 
 function generatePrId() {

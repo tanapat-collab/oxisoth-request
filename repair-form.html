@@ -400,6 +400,15 @@
   <div class="ticket-id" id="ticketDisplay">---</div>
 </div>
 
+<!-- แบนเนอร์เตือนเมื่อเปิดใน LINE/in-app browser -->
+<div id="inappBanner" style="display:none;background:#fca311;color:#1a1a2e;padding:12px 16px;font-size:13px;line-height:1.5;text-align:center">
+  ⚠️ ฟอร์มนี้ทำงานได้ไม่เต็มที่บนเบราว์เซอร์ในแอป LINE<br>
+  <a id="openExternalLink" href="#" style="display:inline-block;margin-top:8px;background:#1a1a2e;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600">
+    👉 แตะเพื่อเปิดในเบราว์เซอร์ปกติ
+  </a>
+  <div style="margin-top:6px;font-size:11px;opacity:0.8">หรือกดเมนู ⋯ มุมขวาบน แล้วเลือก "เปิดในเบราว์เซอร์"</div>
+</div>
+
 <!-- Steps -->
 <div class="steps">
   <div class="step active" id="step-tab-1">
@@ -427,14 +436,7 @@
     <div class="field">
       <label>แผนก / ส่วนงาน <span class="req">*</span></label>
       <select id="department">
-        <option value="">-- เลือกแผนก --</option>
-        <option>ผลิต A</option>
-        <option>ผลิต B</option>
-        <option>ผลิต C</option>
-        <option>QC / ตรวจสอบ</option>
-        <option>บำรุงรักษา</option>
-        <option>คลังสินค้า</option>
-        <option>อื่นๆ</option>
+        <option value="">⏳ กำลังโหลดรายการ...</option>
       </select>
     </div>
     <div class="field">
@@ -447,40 +449,19 @@
     <div class="field">
       <label>เครื่องจักร / รหัสเครื่อง <span class="req">*</span></label>
       <select id="machineId">
-        <option value="">-- เลือกเครื่องจักร --</option>
-        <option>AIR-COMP-01 — Air Compressor หลัก</option>
-        <option>AIR-COMP-02 — Air Compressor สำรอง</option>
-        <option>CNC-001 — เครื่อง CNC ไลน์ A</option>
-        <option>CNC-002 — เครื่อง CNC ไลน์ B</option>
-        <option>CONV-001 — สายพาน Conveyor</option>
-        <option>PUMP-001 — ปั๊มน้ำ</option>
-        <option>HEAT-001 — เตาอบ</option>
-        <option>อื่นๆ (ระบุด้านล่าง)</option>
+        <option value="">⏳ กำลังโหลดรายการ...</option>
       </select>
     </div>
     <div class="field">
       <label>ตำแหน่ง / พื้นที่ <span class="req">*</span></label>
       <select id="location">
-        <option value="">-- เลือกพื้นที่ --</option>
-        <option>อาคาร A — ชั้น 1</option>
-        <option>อาคาร A — ชั้น 2</option>
-        <option>อาคาร B — โรงผลิต</option>
-        <option>อาคาร C — คลังสินค้า</option>
-        <option>ลานจอดรถ / กลางแจ้ง</option>
-        <option>ห้องเครื่อง / Utility</option>
+        <option value="">⏳ กำลังโหลดรายการ...</option>
       </select>
     </div>
     <div class="field">
       <label>ประเภทปัญหา <span class="req">*</span></label>
       <select id="problemType">
-        <option value="">-- เลือกประเภท --</option>
-        <option>เครื่องไม่ทำงาน / หยุดกะทันหัน</option>
-        <option>เสียงผิดปกติ / สั่น</option>
-        <option>น้ำมัน / ของเหลวรั่ว</option>
-        <option>แรงดัน / อุณหภูมิผิดปกติ</option>
-        <option>ระบบไฟฟ้า / วงจร</option>
-        <option>สายพาน / ตัวขับเคลื่อน</option>
-        <option>อื่นๆ</option>
+        <option value="">⏳ กำลังโหลดรายการ...</option>
       </select>
     </div>
     <div class="field">
@@ -578,6 +559,27 @@ let ticketId = generateTicketId();
 // Init
 document.getElementById('ticketDisplay').textContent = ticketId;
 loadOptions();  // ดึงรายการ dropdown จาก Google Sheet
+detectInAppBrowser();  // ตรวจว่าเปิดในแอป LINE หรือไม่
+
+// =============================================
+// ตรวจจับ in-app browser (LINE, FB, IG) แล้วแสดงแบนเนอร์
+// =============================================
+function detectInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  const isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua);
+  if (!isInApp) return;
+
+  const banner = document.getElementById('inappBanner');
+  if (banner) banner.style.display = 'block';
+
+  // ปุ่มเปิดในเบราว์เซอร์ปกติ — LINE รองรับ ?openExternalBrowser=1
+  const link = document.getElementById('openExternalLink');
+  if (link) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('openExternalBrowser', '1');
+    link.href = url.toString();
+  }
+}
 
 // =============================================
 // โหลดรายการ dropdown จาก Sheet "ตัวเลือก"
@@ -599,25 +601,43 @@ const PLACEHOLDER = {
 };
 
 async function loadOptions() {
-  // Demo mode: ยังไม่ได้ใส่ URL → ใช้รายการเดิมใน HTML
-  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') return;
+  // ฟังก์ชันช่วย: ตั้ง placeholder ให้ dropdown เมื่อโหลดไม่ได้
+  const setPlaceholder = (text) => {
+    Object.values(OPTION_MAP).forEach(selectId => {
+      const sel = document.getElementById(selectId);
+      if (sel) sel.innerHTML = `<option value="">${text}</option>`;
+    });
+  };
+
+  // ยังไม่ได้ใส่ URL → แจ้งให้ตั้งค่า
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    setPlaceholder('-- เลือก --');
+    return;
+  }
 
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=options`);
     const opts = await res.json();
-    if (!opts || Object.keys(opts).length === 0) return; // ไม่มีข้อมูล → คงรายการเดิม
+    if (!opts || Object.keys(opts).length === 0) {
+      setPlaceholder('-- เลือก --');
+      return;
+    }
 
     Object.entries(OPTION_MAP).forEach(([col, selectId]) => {
-      const list = opts[col];
-      if (!list || !list.length) return; // คอลัมน์นี้ว่าง → คงรายการเดิมไว้
       const sel = document.getElementById(selectId);
       if (!sel) return;
+      const list = opts[col];
+      if (!list || !list.length) {
+        sel.innerHTML = `<option value="">${PLACEHOLDER[selectId] || '-- เลือก --'}</option>`;
+        return;
+      }
       sel.innerHTML =
         `<option value="">${PLACEHOLDER[selectId] || '-- เลือก --'}</option>` +
         list.map(v => `<option>${v}</option>`).join('');
     });
   } catch(e) {
-    console.warn('โหลดรายการ dropdown ไม่สำเร็จ ใช้รายการเดิมแทน:', e);
+    console.warn('โหลดรายการ dropdown ไม่สำเร็จ:', e);
+    setPlaceholder('⚠️ โหลดไม่สำเร็จ ลองรีเฟรช');
   }
 }
 
