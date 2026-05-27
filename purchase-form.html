@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>ขอซื้อ — OXISO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #22223b;
+    --border: #2d2d4e;
+    --accent: #f59e0b;
+    --accent2: #4cc9f0;
+    --warn: #fca311;
+    --success: #06d6a0;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --radius: 12px;
+    --font: 'IBM Plex Sans Thai', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 12px; }
+  .header-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), #d97706); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .ticket-id { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--accent); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); padding: 4px 10px; border-radius: 6px; }
+
+  .steps { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 12px; }
+  .step { flex: 1; text-align: center; padding: 12px 4px 10px; font-size: 11px; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.2s; cursor: pointer; }
+  .step.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .step.done { color: var(--success); border-bottom-color: var(--success); }
+  .step-num { display: block; width: 22px; height: 22px; border-radius: 50%; background: var(--border); margin: 0 auto 4px; font-size: 11px; line-height: 22px; }
+  .step.active .step-num { background: var(--accent); color: #000; }
+  .step.done .step-num { background: var(--success); color: #000; }
+
+  .container { padding: 20px 16px; max-width: 560px; margin: 0 auto; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; display: none; }
+  .panel.active { display: block; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+  label .req { color: #f72585; margin-left: 2px; }
+  input[type="text"], input[type="tel"], input[type="number"], select, textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 14px; font-size: 15px; color: var(--text); font-family: var(--font); transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,158,11,0.1); }
+  input::placeholder, textarea::placeholder { color: #555570; }
+  textarea { resize: none; min-height: 80px; line-height: 1.5; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+  .row2 { display: flex; gap: 12px; }
+  .row2 > .field { flex: 1; }
+
+  .total-box { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .total-box .lbl { font-size: 13px; color: var(--muted); }
+  .total-box .val { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+
+  .photo-zone { display: block; border: 1.5px dashed var(--border); border-radius: 10px; padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .photo-zone:hover { border-color: var(--accent); background: rgba(245,158,11,0.04); }
+  .photo-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .photo-icon { font-size: 36px; margin-bottom: 8px; }
+  .photo-zone p { font-size: 14px; color: var(--muted); }
+  .photo-zone small { font-size: 11px; color: #555570; }
+  .photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .preview-item { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-item .remove { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border: none; color: #fff; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .photo-count { margin-top: 8px; font-size: 12px; color: var(--accent); text-align: center; }
+
+  .nav-buttons { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-back { flex: 0 0 80px; padding: 13px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 14px; font-family: var(--font); cursor: pointer; transition: all 0.15s; }
+  .btn-back:hover { background: var(--surface2); }
+  .btn-next { flex: 1; padding: 13px; border-radius: 10px; border: none; background: linear-gradient(135deg, #d97706, var(--accent)); color: #fff; font-size: 15px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: all 0.15s; }
+  .btn-next:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-submit { flex: 1; padding: 13px; border-radius: 10px; border: none; background: linear-gradient(135deg, #06d6a0, #0cb87a); color: #000; font-size: 15px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: all 0.15s; }
+  .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .review-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 12px; }
+  .review-row:last-child { border-bottom: none; }
+  .review-label { color: var(--muted); flex-shrink: 0; }
+  .review-value { text-align: right; font-weight: 500; word-break: break-word; }
+
+  .success-screen { text-align: center; padding: 40px 20px; }
+  .success-anim { width: 80px; height: 80px; background: rgba(6,214,160,0.1); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; animation: pop 0.4s ease; }
+  @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .ticket-big { font-family: var(--mono); font-size: 22px; color: var(--accent); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); padding: 12px 24px; border-radius: 10px; margin: 16px auto; display: inline-block; letter-spacing: 0.05em; }
+  .btn-new { margin-top: 20px; padding: 12px 32px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; font-family: var(--font); cursor: pointer; }
+
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,15,26,0.85); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  .loading-overlay.show { display: flex; }
+  .spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg { display: none; background: rgba(247,37,133,0.1); border: 1px solid rgba(247,37,133,0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #f72585; margin-top: 12px; }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span style="color:var(--muted);font-size:14px">กำลังส่งข้อมูล...</span>
+</div>
+
+<div class="header">
+  <div class="header-icon">🛒</div>
+  <div>
+    <div class="header-title">ใบขอซื้อ</div>
+    <div class="header-sub">OXISO Purchase Request</div>
+  </div>
+  <div class="ticket-id" id="ticketDisplay">---</div>
+</div>
+
+<div class="steps">
+  <div class="step active" id="step-tab-1"><span class="step-num">1</span>ข้อมูลผู้ขอ</div>
+  <div class="step" id="step-tab-2"><span class="step-num">2</span>รายการ</div>
+  <div class="step" id="step-tab-3"><span class="step-num">3</span>ตรวจสอบ</div>
+</div>
+
+<div class="container">
+
+  <!-- STEP 1 -->
+  <div class="panel active" id="step1">
+    <div class="panel-title">📋 ข้อมูลผู้ขอ</div>
+    <div class="field">
+      <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+      <input type="text" id="reporterName" placeholder="เช่น สมชาย ใจดี">
+    </div>
+    <div class="field">
+      <label>แผนก / ส่วนงาน <span class="req">*</span></label>
+      <select id="department">
+        <option value="">-- เลือกแผนก --</option>
+        <option>ผลิต A</option>
+        <option>ผลิต B</option>
+        <option>ผลิต C</option>
+        <option>QC / ตรวจสอบ</option>
+        <option>บำรุงรักษา</option>
+        <option>คลังสินค้า</option>
+        <option>จัดซื้อ</option>
+        <option>อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ประเภทสินค้า <span class="req">*</span></label>
+      <select id="prType">
+        <option value="">-- เลือกประเภท --</option>
+        <option>อะไหล่เครื่องจักร</option>
+        <option>วัสดุสิ้นเปลือง</option>
+        <option>เครื่องมือ / อุปกรณ์</option>
+        <option>วัตถุดิบการผลิต</option>
+        <option>อุปกรณ์สำนักงาน</option>
+        <option>อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>อ้างอิงใบแจ้งซ่อม (ถ้ามี)</label>
+      <input type="text" id="repairRef" placeholder="เช่น MR-250525-A1B (ถ้าของนี้ใช้ซ่อมเครื่อง)">
+    </div>
+    <div class="nav-buttons">
+      <button class="btn-next" onclick="goStep(2)">ถัดไป: รายการสินค้า →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="panel" id="step2">
+    <div class="panel-title">🛒 รายการที่ขอซื้อ</div>
+    <div class="field">
+      <label>ชื่อรายการ / สินค้า <span class="req">*</span></label>
+      <input type="text" id="itemName" placeholder="เช่น ไส้กรองลม Air Compressor รุ่น XYZ">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>จำนวน <span class="req">*</span></label>
+        <input type="number" id="quantity" placeholder="0" min="0" oninput="calcTotal()">
+      </div>
+      <div class="field">
+        <label>หน่วย</label>
+        <input type="text" id="unit" placeholder="ชิ้น / กล่อง / ลิตร">
+      </div>
+    </div>
+    <div class="field">
+      <label>ราคาประมาณ/หน่วย (บาท)</label>
+      <input type="number" id="unitPrice" placeholder="0" min="0" oninput="calcTotal()">
+    </div>
+    <div class="total-box">
+      <span class="lbl">ยอดรวมประมาณ</span>
+      <span class="val" id="totalDisplay">฿0</span>
+    </div>
+
+    <div class="field" style="margin-top:16px">
+      <label>เหตุผล / ความจำเป็น <span class="req">*</span></label>
+      <textarea id="reason" placeholder="อธิบายว่าทำไมต้องซื้อ, ใช้กับงานอะไร, ด่วนหรือไม่..."></textarea>
+    </div>
+
+    <div class="panel-title" style="margin-top:20px">📷 รูป / สเปกสินค้า (ถ้ามี)</div>
+    <label class="photo-zone" for="photoInput">
+      <input type="file" id="photoInput" accept="image/*" capture="camera" multiple onchange="handlePhotos(this)" style="display:none">
+      <div class="photo-icon">📷</div>
+      <p>แตะเพื่อถ่ายรูป หรือแนบไฟล์สเปก</p>
+      <small>รองรับ JPG, PNG — สูงสุด 5 รูป</small>
+    </label>
+    <div class="photo-preview" id="photoPreview"></div>
+    <div class="photo-count" id="photoCount"></div>
+
+    <div class="field" style="margin-top:16px">
+      <label>หมายเหตุเพิ่มเติม</label>
+      <textarea id="notes" placeholder="ผู้ขาย, ลิงก์สินค้า, ข้อมูลอื่นๆ" style="min-height:60px"></textarea>
+    </div>
+
+    <div class="error-msg" id="err2">⚠️ กรุณากรอกชื่อรายการ จำนวน และเหตุผลให้ครบ</div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goStep(1)">← กลับ</button>
+      <button class="btn-next" onclick="goStep(3)">ตรวจสอบและส่ง →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="step3">
+    <div class="panel-title">✅ ตรวจสอบข้อมูล</div>
+    <div id="reviewContent"></div>
+    <div class="error-msg" id="err3"></div>
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goStep(2)">← แก้ไข</button>
+      <button class="btn-submit" onclick="submitForm()">📤 ส่งใบขอซื้อ</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="panel" id="stepSuccess">
+    <div class="success-screen">
+      <div class="success-anim">✅</div>
+      <h2 style="font-size:20px;margin-bottom:8px">ส่งใบขอซื้อแล้ว!</h2>
+      <p style="color:var(--muted);font-size:14px">เลขที่ใบขอซื้อของคุณ</p>
+      <div class="ticket-big" id="successTicket"></div>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px">รออนุมัติจากหัวหน้า<br>ติดตามสถานะได้ที่ Dashboard</p>
+      <button class="btn-new" onclick="resetForm()">+ ขอซื้อรายการใหม่</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================
+// CONFIG — ใส่ Web app URL เดียวกับระบบแจ้งซ่อม
+// =============================================
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzC4qLsJj1uX6Tfeu6_iaW9MzECdnLbJoRbY8p5jeBx7MQXRKjoPf-KPl3z8auE0NXe/exec';
+
+let currentStep = 1;
+let photoFiles = [];
+let prId = generatePrId();
+
+document.getElementById('ticketDisplay').textContent = prId;
+loadOptions();
+
+// แมปคอลัมน์ Sheet → id ของ select
+const OPTION_MAP = { 'แผนก': 'department' };
+const PLACEHOLDER = { 'department': '-- เลือกแผนก --' };
+
+async function loadOptions() {
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') return;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=options`);
+    const opts = await res.json();
+    if (!opts || Object.keys(opts).length === 0) return;
+    Object.entries(OPTION_MAP).forEach(([col, selectId]) => {
+      const list = opts[col];
+      if (!list || !list.length) return;
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      sel.innerHTML = `<option value="">${PLACEHOLDER[selectId]}</option>` + list.map(v => `<option>${v}</option>`).join('');
+    });
+  } catch(e) { console.warn('โหลด dropdown ไม่สำเร็จ:', e); }
+}
+
+function generatePrId() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const rnd = Math.random().toString(36).slice(2,5).toUpperCase();
+  return `PR-${yy}${mm}${dd}-${rnd}`;
+}
+
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('quantity').value) || 0;
+  const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const total = qty * price;
+  document.getElementById('totalDisplay').textContent = '฿' + total.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+}
+
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+  document.getElementById('step'+currentStep).classList.remove('active');
+  document.getElementById('step-tab-'+currentStep)?.classList.remove('active');
+  document.getElementById('step-tab-'+currentStep)?.classList.add('done');
+  currentStep = n;
+  const panel = document.getElementById('step'+n);
+  if (panel) panel.classList.add('active');
+  const tab = document.getElementById('step-tab-'+n);
+  if (tab) { tab.classList.remove('done'); tab.classList.add('active'); }
+  if (n === 3) buildReview();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function validateStep(n) {
+  if (n === 1) {
+    const name = document.getElementById('reporterName').value.trim();
+    const dept = document.getElementById('department').value;
+    const type = document.getElementById('prType').value;
+    if (!name || !dept || !type) { alert('กรุณากรอกชื่อ แผนก และประเภทสินค้า'); return false; }
+  }
+  if (n === 2) {
+    const item = document.getElementById('itemName').value.trim();
+    const qty = document.getElementById('quantity').value;
+    const reason = document.getElementById('reason').value.trim();
+    if (!item || !qty || !reason) {
+      document.getElementById('err2').classList.add('show');
+      return false;
+    }
+    document.getElementById('err2').classList.remove('show');
+  }
+  return true;
+}
+
+function handlePhotos(input) {
+  const files = Array.from(input.files);
+  const remaining = 5 - photoFiles.length;
+  files.slice(0, remaining).forEach(f => photoFiles.push(f));
+  renderPreviews();
+}
+function renderPreviews() {
+  const container = document.getElementById('photoPreview');
+  container.innerHTML = '';
+  photoFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    div.innerHTML = `<img src="${url}"><button class="remove" onclick="removePhoto(${i})">✕</button>`;
+    container.appendChild(div);
+  });
+  document.getElementById('photoCount').textContent = photoFiles.length > 0 ? `เลือกแล้ว ${photoFiles.length}/5 รูป` : '';
+}
+function removePhoto(i) { photoFiles.splice(i, 1); renderPreviews(); }
+
+function buildReview() {
+  const qty = parseFloat(document.getElementById('quantity').value) || 0;
+  const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const total = qty * price;
+  const rows = [
+    ['เลขที่ PR', `<span style="font-family:var(--mono);color:var(--accent)">${prId}</span>`],
+    ['ผู้ขอ', document.getElementById('reporterName').value],
+    ['แผนก', document.getElementById('department').value],
+    ['ประเภท', document.getElementById('prType').value],
+    ['อ้างอิงใบแจ้งซ่อม', document.getElementById('repairRef').value || '-'],
+    ['รายการ', document.getElementById('itemName').value],
+    ['จำนวน', `${qty} ${document.getElementById('unit').value}`],
+    ['ราคา/หน่วย', '฿' + price.toLocaleString('th-TH')],
+    ['ยอดรวม', `<b style="color:var(--accent)">฿${total.toLocaleString('th-TH')}</b>`],
+    ['เหตุผล', document.getElementById('reason').value],
+    ['รูปภาพ', `${photoFiles.length} รูป`],
+    ['หมายเหตุ', document.getElementById('notes').value || '-'],
+  ];
+  document.getElementById('reviewContent').innerHTML = rows.map(([l,v]) => `
+    <div class="review-row"><span class="review-label">${l}</span><span class="review-value">${v}</span></div>`).join('');
+}
+
+async function submitForm() {
+  document.getElementById('loadingOverlay').classList.add('show');
+
+  const photoBase64List = [];
+  for (const file of photoFiles) {
+    const b64 = await toBase64(file);
+    photoBase64List.push({ name: file.name, data: b64 });
+  }
+
+  const payload = {
+    formType:     'purchase',
+    prId:         prId,
+    timestamp:    new Date().toLocaleString('th-TH'),
+    reporterName: document.getElementById('reporterName').value,
+    department:   document.getElementById('department').value,
+    prType:       document.getElementById('prType').value,
+    repairRef:    document.getElementById('repairRef').value,
+    itemName:     document.getElementById('itemName').value,
+    quantity:     document.getElementById('quantity').value,
+    unit:         document.getElementById('unit').value,
+    unitPrice:    document.getElementById('unitPrice').value,
+    reason:       document.getElementById('reason').value,
+    notes:        document.getElementById('notes').value,
+    photos:       JSON.stringify(photoBase64List),
+  };
+
+  try {
+    if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      await new Promise(r => setTimeout(r, 1800));
+      showSuccess();
+      return;
+    }
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    const text = await res.text();
+    const json = JSON.parse(text);
+    if (json.status === 'ok') showSuccess();
+    else throw new Error(json.message || 'Error');
+  } catch(e) {
+    document.getElementById('loadingOverlay').classList.remove('show');
+    const err = document.getElementById('err3');
+    err.textContent = '⚠️ เกิดข้อผิดพลาด: ' + e.message;
+    err.classList.add('show');
+  }
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function showSuccess() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+  document.getElementById('step3').classList.remove('active');
+  ['step-tab-1','step-tab-2','step-tab-3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+  });
+  document.getElementById('successTicket').textContent = prId;
+  document.getElementById('stepSuccess').classList.add('active');
+}
+
+function resetForm() { location.reload(); }
+</script>
+</body>
+</html>

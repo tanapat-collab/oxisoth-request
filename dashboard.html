@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard ติดตามงานซ่อม — OXISO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #f5f5f0;
+    --surface: #ffffff;
+    --surface2: #f8f8f4;
+    --border: #e0e0d8;
+    --text: #1a1a2e;
+    --muted: #666677;
+    --accent: #4361ee;
+    --success: #0cb87a;
+    --warn: #f59e0b;
+    --danger: #e53e3e;
+    --info: #3b82f6;
+    --font: 'IBM Plex Sans Thai', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    background: var(--text);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo .brand { font-size: 16px; font-weight: 600; }
+  .sidebar-logo .sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .sidebar-nav { padding: 16px 12px; flex: 1; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .nav-item.active { background: var(--accent); color: #fff; }
+  .nav-icon { font-size: 16px; }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* Main area */
+  .main { margin-left: 220px; flex: 1; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .topbar-title { font-size: 17px; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.9; }
+
+  /* Content */
+  .content { padding: 24px 28px; }
+
+  /* Stat cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-card.total::before { background: var(--accent); }
+  .stat-card.pending::before { background: var(--warn); }
+  .stat-card.inprog::before { background: var(--info); }
+  .stat-card.done::before { background: var(--success); }
+  .stat-card.urgent::before { background: var(--danger); }
+
+  .stat-icon { font-size: 22px; margin-bottom: 10px; }
+  .stat-num { font-size: 32px; font-weight: 700; font-family: var(--mono); margin-bottom: 2px; }
+  .stat-label { font-size: 12px; color: var(--muted); }
+
+  /* Filters */
+  .filters {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filters select, .filters input {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--font);
+  }
+  .filters select:focus, .filters input:focus { outline: none; border-color: var(--accent); }
+  .filter-count { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: var(--surface2); }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .ticket-code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .machine-name { font-weight: 500; }
+  .reporter-info { color: var(--muted); font-size: 12px; }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .s-wait { background: #FEF3C7; color: #92400E; }
+  .s-wait::before { background: #F59E0B; }
+  .s-prog { background: #DBEAFE; color: #1E40AF; }
+  .s-prog::before { background: #3B82F6; animation: blink 1.2s ease-in-out infinite; }
+  .s-done { background: #D1FAE5; color: #065F46; }
+  .s-done::before { background: #10B981; }
+  .s-cancel { background: #FEE2E2; color: #991B1B; }
+  .s-cancel::before { background: #EF4444; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Priority badge */
+  .pri-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .p-low { background: #D1FAE5; color: #065F46; }
+  .p-med { background: #FEF3C7; color: #92400E; }
+  .p-high { background: #FEE2E2; color: #991B1B; }
+
+  /* Action buttons in table */
+  .action-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: var(--font);
+    color: var(--text);
+    transition: all 0.1s;
+  }
+  .action-btn:hover { background: var(--surface2); }
+  .action-btn.primary { border-color: var(--accent); color: var(--accent); }
+  .action-btn.primary:hover { background: #EEF2FF; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .modal-close { margin-left: auto; background: transparent; border: none; cursor: pointer; font-size: 18px; color: var(--muted); }
+
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .modal-field select,
+  .modal-field input,
+  .modal-field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font);
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .modal-field select:focus,
+  .modal-field input:focus,
+  .modal-field textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-field textarea { min-height: 80px; resize: none; }
+
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .detail-item { background: var(--surface2); border-radius: 8px; padding: 12px; }
+  .detail-item .dl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .detail-item .dv { font-size: 14px; font-weight: 500; }
+
+  /* Timeline */
+  .timeline { margin: 16px 0; }
+  .tl-item { display: flex; gap: 12px; margin-bottom: 12px; }
+  .tl-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; margin-top: 2px; }
+  .tl-content { flex: 1; }
+  .tl-status { font-size: 13px; font-weight: 600; }
+  .tl-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Loading shimmer */
+  .shimmer {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 6px;
+    height: 14px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .content { padding: 16px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .detail-grid { grid-template-columns: 1fr; }
+    .hide-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div style="font-size:22px;margin-bottom:6px">🔧</div>
+      <div class="brand">OXISO Maintenance</div>
+      <div class="sub">ระบบแจ้งซ่อมเครื่องจักร</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showView('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showView('tickets')">
+        <span class="nav-icon">📋</span> ใบแจ้งซ่อมทั้งหมด
+      </button>
+      <button class="nav-item" onclick="showView('pending')">
+        <span class="nav-icon">⏳</span> รอดำเนินการ
+      </button>
+      <button class="nav-item" onclick="showView('inprogress')">
+        <span class="nav-icon">🔄</span> กำลังดำเนินการ
+      </button>
+      <button class="nav-item" onclick="showView('done')">
+        <span class="nav-icon">✅</span> แล้วเสร็จ
+      </button>
+      <div style="margin:12px 0;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px">
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);padding:0 12px 6px;text-transform:uppercase;letter-spacing:0.08em">ระบบขอซื้อ</div>
+        <button class="nav-item" onclick="showView('purchase')">
+          <span class="nav-icon">🛒</span> ใบขอซื้อทั้งหมด
+        </button>
+        <button class="nav-item" onclick="showView('pr_pending')">
+          <span class="nav-icon">⏳</span> รออนุมัติ
+        </button>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      อัปเดตล่าสุด: <span id="lastUpdate">—</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">📊 Dashboard ภาพรวม</div>
+      <div class="topbar-right">
+        <button class="btn" onclick="loadData()">🔄 รีเฟรช</button>
+        <button class="btn btn-primary" id="newBtn" onclick="window.open('repair-form.html')">+ แจ้งซ่อมใหม่</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== REPAIR SECTION ===== -->
+      <div id="repairSection">
+
+      <!-- Stat Cards -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card total"><div class="stat-icon">📋</div><div class="stat-num shimmer" style="height:32px;width:60px"></div><div class="stat-label">ทั้งหมด</div></div>
+        <div class="stat-card pending"><div class="stat-icon">⏳</div><div class="stat-num shimmer" style="height:32px;width:40px"></div><div class="stat-label">รอดำเนินการ</div></div>
+        <div class="stat-card inprog"><div class="stat-icon">🔄</div><div class="stat-num shimmer" style="height:32px;width:40px"></div><div class="stat-label">กำลังดำเนินการ</div></div>
+        <div class="stat-card done"><div class="stat-icon">✅</div><div class="stat-num shimmer" style="height:32px;width:40px"></div><div class="stat-label">แล้วเสร็จ</div></div>
+        <div class="stat-card urgent"><div class="stat-icon">🔴</div><div class="stat-num shimmer" style="height:32px;width:40px"></div><div class="stat-label">เร่งด่วนคงค้าง</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <select id="filterStatus" onchange="applyFilters()">
+          <option value="">สถานะทั้งหมด</option>
+          <option>รอดำเนินการ</option>
+          <option>กำลังดำเนินการ</option>
+          <option>แล้วเสร็จ</option>
+          <option>ยกเลิก</option>
+        </select>
+        <select id="filterPriority" onchange="applyFilters()">
+          <option value="">ความเร่งด่วนทั้งหมด</option>
+          <option>เร่งด่วน</option>
+          <option>ปานกลาง</option>
+          <option>ต่ำ</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="🔍 ค้นหา..." oninput="applyFilters()" style="min-width:180px">
+        <span class="filter-count" id="filterCount"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table id="ticketTable">
+          <thead>
+            <tr>
+              <th>เลขที่</th>
+              <th>วันที่แจ้ง</th>
+              <th>เครื่องจักร</th>
+              <th class="hide-mobile">ตำแหน่ง</th>
+              <th>ปัญหา</th>
+              <th>ระดับ</th>
+              <th>สถานะ</th>
+              <th class="hide-mobile">ช่าง</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ticketBody">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      </div><!-- end repairSection -->
+
+      <!-- ===== PURCHASE SECTION ===== -->
+      <div id="purchaseSection" style="display:none">
+        <div class="stats-grid" id="prStatsGrid">
+          <div class="stat-card total"><div class="stat-icon">🛒</div><div class="stat-num" id="prTotal">0</div><div class="stat-label">ทั้งหมด</div></div>
+          <div class="stat-card pending"><div class="stat-icon">⏳</div><div class="stat-num" id="prPending">0</div><div class="stat-label">รออนุมัติ</div></div>
+          <div class="stat-card done"><div class="stat-icon">✅</div><div class="stat-num" id="prApproved">0</div><div class="stat-label">อนุมัติแล้ว</div></div>
+          <div class="stat-card inprog"><div class="stat-icon">💰</div><div class="stat-num" id="prAmount" style="font-size:22px">฿0</div><div class="stat-label">ยอดรออนุมัติ</div></div>
+        </div>
+
+        <div class="filters">
+          <select id="prFilterStatus" onchange="renderPurchaseTable()">
+            <option value="">สถานะทั้งหมด</option>
+            <option>รออนุมัติ</option>
+            <option>อนุมัติแล้ว</option>
+            <option>สั่งซื้อแล้ว</option>
+            <option>ได้รับของ</option>
+            <option>ไม่อนุมัติ</option>
+          </select>
+          <input type="text" id="prFilterSearch" placeholder="🔍 ค้นหา..." oninput="renderPurchaseTable()" style="min-width:180px">
+          <span class="filter-count" id="prFilterCount"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>เลขที่ PR</th>
+                <th>วันที่ขอ</th>
+                <th>รายการ</th>
+                <th class="hide-mobile">จำนวน</th>
+                <th>ยอดรวม</th>
+                <th>สถานะ</th>
+                <th class="hide-mobile">ผู้ขอ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="prBody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">กำลังโหลด...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- end purchaseSection -->
+
+    </div>
+  </main>
+</div>
+
+<!-- Detail / Update Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">
+      <span>📋</span>
+      <span id="modalTitle">รายละเอียดใบแจ้งซ่อม</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="detail-grid" id="detailGrid"></div>
+
+    <div id="descSection" style="margin-bottom:20px;padding:14px;background:var(--surface2);border-radius:10px;font-size:14px;line-height:1.6"></div>
+
+    <div id="timelineSection"></div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+
+    <p style="font-size:13px;font-weight:600;margin-bottom:14px">อัปเดตสถานะ</p>
+
+    <div class="modal-field">
+      <label>สถานะใหม่</label>
+      <select id="updateStatus">
+        <option>รอดำเนินการ</option>
+        <option>กำลังดำเนินการ</option>
+        <option>แล้วเสร็จ</option>
+        <option>ยกเลิก</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>หมายเหตุ / ผลการซ่อม</label>
+      <textarea id="updateRemark" placeholder="บันทึกรายละเอียดการซ่อม..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>รหัสผ่านผู้อัปเดต <span style="color:#f72585">*</span></label>
+      <input type="password" id="updatePassword" placeholder="กรอกรหัสของคุณ" autocomplete="off">
+      <div id="updateMsg" style="font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveUpdate()">💾 บันทึกการอัปเดต</button>
+    </div>
+  </div>
+</div>
+
+<!-- Purchase Approval Modal -->
+<div class="modal-overlay" id="prModalOverlay" onclick="closePrModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">
+      <span>🛒</span>
+      <span id="prModalTitle">รายละเอียดใบขอซื้อ</span>
+      <button class="modal-close" onclick="closePrModal()">✕</button>
+    </div>
+    <div class="detail-grid" id="prDetailGrid"></div>
+    <div id="prReasonSection" style="margin-bottom:20px;padding:14px;background:var(--surface2);border-radius:10px;font-size:14px;line-height:1.6"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+    <p style="font-size:13px;font-weight:600;margin-bottom:14px">อนุมัติ / อัปเดตสถานะ</p>
+    <div class="modal-field">
+      <label>สถานะ</label>
+      <select id="prUpdateStatus">
+        <option>รออนุมัติ</option>
+        <option>อนุมัติแล้ว</option>
+        <option>สั่งซื้อแล้ว</option>
+        <option>ได้รับของ</option>
+        <option>ไม่อนุมัติ</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>หมายเหตุ</label>
+      <textarea id="prUpdateRemark" placeholder="เหตุผลการอนุมัติ/ไม่อนุมัติ..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>รหัสผ่านผู้อนุมัติ <span style="color:#f72585">*</span></label>
+      <input type="password" id="prUpdatePassword" placeholder="เฉพาะหัวหน้าที่มีสิทธิ์อนุมัติ" autocomplete="off">
+      <div id="prUpdateMsg" style="font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="closePrModal()">ยกเลิก</button>
+      <button class="btn btn-primary" style="flex:1" onclick="savePrUpdate()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// CONFIG
+// =============================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbzC4qLsJj1uX6Tfeu6_iaW9MzECdnLbJoRbY8p5jeBx7MQXRKjoPf-KPl3z8auE0NXe/exec';
+
+let allTickets = [];
+let currentTicket = null;
+let currentView = 'dashboard';
+let allPurchases = [];
+let currentPR = null;
+
+// =============================================
+// INIT
+// =============================================
+window.onload = () => {
+  loadData();
+  // Auto-refresh every 2 minutes
+  setInterval(loadData, 120000);
+};
+
+// =============================================
+// Load data
+// =============================================
+async function loadData() {
+  try {
+    // Demo mode
+    if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      allTickets = getDemoData();
+      renderAll();
+      return;
+    }
+    const res = await fetch(`${API_URL}?action=list`);
+    allTickets = await res.json();
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    allTickets = getDemoData();
+    renderAll();
+  }
+}
+
+function renderAll() {
+  const now = new Date().toLocaleTimeString('th-TH');
+  document.getElementById('lastUpdate').textContent = now;
+  renderStats();
+  applyFilters();
+}
+
+// =============================================
+// Stats
+// =============================================
+function renderStats() {
+  const s = {
+    total: allTickets.length,
+    pending: allTickets.filter(t => t['สถานะ'] === 'รอดำเนินการ').length,
+    inProgress: allTickets.filter(t => t['สถานะ'] === 'กำลังดำเนินการ').length,
+    done: allTickets.filter(t => t['สถานะ'] === 'แล้วเสร็จ').length,
+    urgent: allTickets.filter(t => t['ความเร่งด่วน'] && t['ความเร่งด่วน'].includes('เร่งด่วน') && t['สถานะ'] !== 'แล้วเสร็จ').length,
+  };
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card total"><div class="stat-icon">📋</div><div class="stat-num">${s.total}</div><div class="stat-label">ทั้งหมด</div></div>
+    <div class="stat-card pending"><div class="stat-icon">⏳</div><div class="stat-num">${s.pending}</div><div class="stat-label">รอดำเนินการ</div></div>
+    <div class="stat-card inprog"><div class="stat-icon">🔄</div><div class="stat-num">${s.inProgress}</div><div class="stat-label">กำลังดำเนินการ</div></div>
+    <div class="stat-card done"><div class="stat-icon">✅</div><div class="stat-num">${s.done}</div><div class="stat-label">แล้วเสร็จ</div></div>
+    <div class="stat-card urgent"><div class="stat-icon">🔴</div><div class="stat-num">${s.urgent}</div><div class="stat-label">เร่งด่วนคงค้าง</div></div>
+  `;
+}
+
+// =============================================
+// Table
+// =============================================
+function applyFilters() {
+  const status = document.getElementById('filterStatus').value;
+  const priority = document.getElementById('filterPriority').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+
+  let filtered = allTickets.filter(t => {
+    if (status && t['สถานะ'] !== status) return false;
+    if (priority && !(t['ความเร่งด่วน'] || '').includes(priority)) return false;
+    if (search) {
+      const hay = [t['เลขที่ใบแจ้งซ่อม'], t['รหัสเครื่องจักร'], t['ผู้แจ้ง'], t['ประเภทปัญหา'], t['ตำแหน่ง']].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    // View filter
+    if (currentView === 'pending' && t['สถานะ'] !== 'รอดำเนินการ') return false;
+    if (currentView === 'inprogress' && t['สถานะ'] !== 'กำลังดำเนินการ') return false;
+    if (currentView === 'done' && t['สถานะ'] !== 'แล้วเสร็จ') return false;
+    return true;
+  });
+
+  document.getElementById('filterCount').textContent = `แสดง ${filtered.length} รายการ`;
+  renderTable(filtered);
+}
+
+const statusClass = { 'รอดำเนินการ':'s-wait', 'กำลังดำเนินการ':'s-prog', 'แล้วเสร็จ':'s-done', 'ยกเลิก':'s-cancel' };
+
+function priClass(p) {
+  if(!p) return '';
+  if(p.includes('เร่งด่วน')) return 'p-high';
+  if(p.includes('ปานกลาง')) return 'p-med';
+  return 'p-low';
+}
+function priShort(p) {
+  if(!p) return '-';
+  if(p.includes('เร่งด่วน')) return '🔴 เร่งด่วน';
+  if(p.includes('ปานกลาง')) return '🟡 ปานกลาง';
+  return '🟢 ต่ำ';
+}
+
+function renderTable(tickets) {
+  const tbody = document.getElementById('ticketBody');
+  if (!tickets.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📭</div><p>ไม่พบรายการที่ตรงกับเงื่อนไข</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = tickets.map(t => `
+    <tr style="cursor:pointer" onclick="openTicket('${t['เลขที่ใบแจ้งซ่อม']}')">
+      <td><span class="ticket-code">${t['เลขที่ใบแจ้งซ่อม']}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${t['วันที่แจ้ง'] || ''}</td>
+      <td>
+        <div class="machine-name">${t['รหัสเครื่องจักร'] || ''}</div>
+        <div class="reporter-info">${t['ผู้แจ้ง'] || ''} · ${t['แผนก'] || ''}</div>
+      </td>
+      <td class="hide-mobile" style="font-size:13px;color:var(--muted)">${t['ตำแหน่ง'] || ''}</td>
+      <td style="font-size:13px">${t['ประเภทปัญหา'] || ''}</td>
+      <td><span class="pri-badge ${priClass(t['ความเร่งด่วน'])}">${priShort(t['ความเร่งด่วน'])}</span></td>
+      <td><span class="status-badge ${statusClass[t['สถานะ']] || 's-wait'}">${t['สถานะ'] || 'รอดำเนินการ'}</span></td>
+      <td class="hide-mobile" style="font-size:13px">${t['ช่างรับผิดชอบ'] || '<span style="color:var(--muted)">—</span>'}</td>
+      <td><button class="action-btn primary" onclick="event.stopPropagation();openTicket('${t['เลขที่ใบแจ้งซ่อม']}')">อัปเดต</button></td>
+    </tr>
+  `).join('');
+}
+
+// =============================================
+// Modal
+// =============================================
+function openTicket(id) {
+  currentTicket = allTickets.find(t => t['เลขที่ใบแจ้งซ่อม'] === id);
+  if (!currentTicket) return;
+  const t = currentTicket;
+
+  document.getElementById('modalTitle').textContent = id;
+  document.getElementById('detailGrid').innerHTML = [
+    ['เครื่องจักร', t['รหัสเครื่องจักร']],
+    ['ตำแหน่ง', t['ตำแหน่ง']],
+    ['ประเภทปัญหา', t['ประเภทปัญหา']],
+    ['ความเร่งด่วน', `<span class="pri-badge ${priClass(t['ความเร่งด่วน'])}">${priShort(t['ความเร่งด่วน'])}</span>`],
+    ['ผู้แจ้ง', `${t['ผู้แจ้ง']} (${t['แผนก']})`],
+    ['วันที่แจ้ง', t['วันที่แจ้ง']],
+  ].map(([l,v]) => `<div class="detail-item"><div class="dl">${l}</div><div class="dv">${v||'—'}</div></div>`).join('');
+
+  document.getElementById('descSection').innerHTML = `<b style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">อาการ</b><br><br>${t['รายละเอียดอาการ'] || '—'}`;
+
+  const tl = [
+    { status: 'แจ้งซ่อม', date: t['วันที่แจ้ง'], by: t['ผู้แจ้ง'] },
+    t['วันที่รับงาน'] ? { status: 'รับงาน', date: t['วันที่รับงาน'], by: t['ช่างรับผิดชอบ'] } : null,
+    t['วันที่แล้วเสร็จ'] ? { status: 'แล้วเสร็จ', date: t['วันที่แล้วเสร็จ'], by: t['ช่างรับผิดชอบ'] } : null,
+  ].filter(Boolean);
+
+  document.getElementById('timelineSection').innerHTML = `
+    <p style="font-size:13px;font-weight:600;margin-bottom:12px">📅 ประวัติ</p>
+    <div class="timeline">
+      ${tl.map((item,i) => `
+        <div class="tl-item">
+          <div class="tl-dot">${i+1}</div>
+          <div class="tl-content">
+            <div class="tl-status">${item.status}</div>
+            <div class="tl-meta">${item.date} — ${item.by}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+  document.getElementById('updateStatus').value = t['สถานะ'] || 'รอดำเนินการ';
+  document.getElementById('updateRemark').value = '';
+  document.getElementById('updatePassword').value = '';
+  document.getElementById('updateMsg').style.display = 'none';
+
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+
+async function saveUpdate() {
+  if (!currentTicket) return;
+  const status = document.getElementById('updateStatus').value;
+  const remark = document.getElementById('updateRemark').value;
+  const password = document.getElementById('updatePassword').value.trim();
+  const msg = document.getElementById('updateMsg');
+
+  if (!password) {
+    showFieldMsg(msg, 'กรุณากรอกรหัสผ่าน', false);
+    return;
+  }
+
+  // Demo mode — รหัสตัวอย่าง: 1234/5678 = ช่าง, 9999 = หัวหน้า
+  if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    const demoUsers = { '1234':'วิชาญ เครื่องดี', '5678':'สมหมาย แข็งแรง', '9999':'คุณทนภัทร' };
+    if (!demoUsers[password]) { showFieldMsg(msg, '❌ รหัสผ่านไม่ถูกต้อง', false); return; }
+    const idx = allTickets.findIndex(t => t['เลขที่ใบแจ้งซ่อม'] === currentTicket['เลขที่ใบแจ้งซ่อม']);
+    if (idx >= 0) {
+      allTickets[idx]['สถานะ'] = status;
+      allTickets[idx]['ช่างรับผิดชอบ'] = demoUsers[password];
+    }
+    closeModal();
+    renderAll();
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({ action:'updateStatus', ticketId:currentTicket['เลขที่ใบแจ้งซ่อม'], status, remark, password });
+    const res = await fetch(`${API_URL}?${params}`);
+    const json = await res.json();
+    if (json.status === 'ok') {
+      closeModal();
+      await loadData();
+    } else {
+      showFieldMsg(msg, '❌ ' + (json.message || 'เกิดข้อผิดพลาด'), false);
+    }
+  } catch(e) {
+    showFieldMsg(msg, 'เกิดข้อผิดพลาด: ' + e.message, false);
+  }
+}
+
+function showFieldMsg(el, text, ok) {
+  el.textContent = text;
+  el.style.color = ok ? 'var(--success)' : '#dc3545';
+  el.style.display = 'block';
+}
+
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+  const isPurchase = (view === 'purchase' || view === 'pr_pending');
+  document.getElementById('repairSection').style.display = isPurchase ? 'none' : 'block';
+  document.getElementById('purchaseSection').style.display = isPurchase ? 'block' : 'none';
+
+  // เปลี่ยนปุ่มมุมขวาบน + หัวข้อ
+  const newBtn = document.getElementById('newBtn');
+  if (isPurchase) {
+    newBtn.textContent = '+ ขอซื้อใหม่';
+    newBtn.setAttribute('onclick', "window.open('purchase-form.html')");
+  } else {
+    newBtn.textContent = '+ แจ้งซ่อมใหม่';
+    newBtn.setAttribute('onclick', "window.open('repair-form.html')");
+  }
+
+  const titles = {
+    dashboard:'📊 Dashboard ภาพรวม', tickets:'📋 ใบแจ้งซ่อมทั้งหมด', pending:'⏳ รอดำเนินการ',
+    inprogress:'🔄 กำลังดำเนินการ', done:'✅ แล้วเสร็จ',
+    purchase:'🛒 ใบขอซื้อทั้งหมด', pr_pending:'⏳ ใบขอซื้อ รออนุมัติ'
+  };
+  document.getElementById('pageTitle').textContent = titles[view] || '';
+
+  if (isPurchase) {
+    loadPurchases();
+  } else {
+    applyFilters();
+  }
+}
+
+// =============================================
+// ระบบขอซื้อ (Purchase Request)
+// =============================================
+async function loadPurchases() {
+  try {
+    if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      allPurchases = getDemoPurchases();
+    } else {
+      const res = await fetch(`${API_URL}?action=listPurchase`);
+      allPurchases = await res.json();
+      if (!Array.isArray(allPurchases)) allPurchases = [];
+    }
+  } catch(e) {
+    console.error(e);
+    allPurchases = getDemoPurchases();
+  }
+  renderPrStats();
+  renderPurchaseTable();
+}
+
+function renderPrStats() {
+  const total = allPurchases.length;
+  const pending = allPurchases.filter(p => p['สถานะ'] === 'รออนุมัติ').length;
+  const approved = allPurchases.filter(p => p['สถานะ'] === 'อนุมัติแล้ว').length;
+  const amount = allPurchases
+    .filter(p => p['สถานะ'] === 'รออนุมัติ')
+    .reduce((sum, p) => sum + (parseFloat(p['รวมเงิน']) || 0), 0);
+  document.getElementById('prTotal').textContent = total;
+  document.getElementById('prPending').textContent = pending;
+  document.getElementById('prApproved').textContent = approved;
+  document.getElementById('prAmount').textContent = '฿' + amount.toLocaleString('th-TH');
+}
+
+const prStatusClass = { 'รออนุมัติ':'s-wait', 'อนุมัติแล้ว':'s-done', 'สั่งซื้อแล้ว':'s-prog', 'ได้รับของ':'s-prog', 'ไม่อนุมัติ':'s-cancel' };
+
+function renderPurchaseTable() {
+  const status = document.getElementById('prFilterStatus').value;
+  const search = document.getElementById('prFilterSearch').value.toLowerCase();
+
+  let filtered = allPurchases.filter(p => {
+    if (currentView === 'pr_pending' && p['สถานะ'] !== 'รออนุมัติ') return false;
+    if (status && p['สถานะ'] !== status) return false;
+    if (search) {
+      const hay = [p['เลขที่ PR'], p['รายการ'], p['ผู้ขอ'], p['ประเภท']].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('prFilterCount').textContent = `แสดง ${filtered.length} รายการ`;
+  const tbody = document.getElementById('prBody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📭</div><p>ไม่พบรายการ</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(p => `
+    <tr style="cursor:pointer" onclick="openPR('${p['เลขที่ PR']}')">
+      <td><span class="ticket-code">${p['เลขที่ PR']}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${p['วันที่ขอ'] || ''}</td>
+      <td>
+        <div class="machine-name">${p['รายการ'] || ''}</div>
+        <div class="reporter-info">${p['ประเภท'] || ''}</div>
+      </td>
+      <td class="hide-mobile" style="font-size:13px">${p['จำนวน'] || ''} ${p['หน่วย'] || ''}</td>
+      <td style="font-weight:600">฿${(parseFloat(p['รวมเงิน'])||0).toLocaleString('th-TH')}</td>
+      <td><span class="status-badge ${prStatusClass[p['สถานะ']] || 's-wait'}">${p['สถานะ'] || 'รออนุมัติ'}</span></td>
+      <td class="hide-mobile" style="font-size:13px">${p['ผู้ขอ'] || ''}</td>
+      <td><button class="action-btn primary" onclick="event.stopPropagation();openPR('${p['เลขที่ PR']}')">${p['สถานะ']==='รออนุมัติ'?'อนุมัติ':'ดู'}</button></td>
+    </tr>
+  `).join('');
+}
+
+function openPR(id) {
+  currentPR = allPurchases.find(p => p['เลขที่ PR'] === id);
+  if (!currentPR) return;
+  const p = currentPR;
+  document.getElementById('prModalTitle').textContent = id;
+  document.getElementById('prDetailGrid').innerHTML = [
+    ['รายการ', p['รายการ']],
+    ['ประเภท', p['ประเภท']],
+    ['จำนวน', `${p['จำนวน']} ${p['หน่วย']||''}`],
+    ['ราคา/หน่วย', '฿' + (parseFloat(p['ราคา/หน่วย'])||0).toLocaleString('th-TH')],
+    ['ยอดรวม', `<b style="color:var(--accent)">฿${(parseFloat(p['รวมเงิน'])||0).toLocaleString('th-TH')}</b>`],
+    ['ผู้ขอ', `${p['ผู้ขอ']} (${p['แผนก']})`],
+    ['อ้างอิงซ่อม', p['อ้างอิงใบแจ้งซ่อม'] || '—'],
+    ['วันที่ขอ', p['วันที่ขอ']],
+  ].map(([l,v]) => `<div class="detail-item"><div class="dl">${l}</div><div class="dv">${v||'—'}</div></div>`).join('');
+  document.getElementById('prReasonSection').innerHTML = `<b style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">เหตุผล / ความจำเป็น</b><br><br>${p['เหตุผล/ความจำเป็น'] || '—'}`;
+  document.getElementById('prUpdateStatus').value = p['สถานะ'] || 'รออนุมัติ';
+  document.getElementById('prUpdateRemark').value = '';
+  document.getElementById('prUpdatePassword').value = '';
+  document.getElementById('prUpdateMsg').style.display = 'none';
+  document.getElementById('prModalOverlay').classList.add('show');
+}
+
+function closePrModal(e) {
+  if (!e || e.target === document.getElementById('prModalOverlay')) {
+    document.getElementById('prModalOverlay').classList.remove('show');
+  }
+}
+
+async function savePrUpdate() {
+  if (!currentPR) return;
+  const status = document.getElementById('prUpdateStatus').value;
+  const remark = document.getElementById('prUpdateRemark').value;
+  const password = document.getElementById('prUpdatePassword').value.trim();
+  const msg = document.getElementById('prUpdateMsg');
+
+  if (!password) { showFieldMsg(msg, 'กรุณากรอกรหัสผ่าน', false); return; }
+
+  // Demo mode — เฉพาะ 9999 (หัวหน้า) อนุมัติได้
+  if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    const approveUsers = { '9999':'คุณทนภัทร' };
+    if (!approveUsers[password]) {
+      showFieldMsg(msg, '❌ รหัสนี้ไม่มีสิทธิ์อนุมัติ (เฉพาะหัวหน้า — ลองรหัส 9999)', false);
+      return;
+    }
+    const idx = allPurchases.findIndex(p => p['เลขที่ PR'] === currentPR['เลขที่ PR']);
+    if (idx >= 0) { allPurchases[idx]['สถานะ'] = status; allPurchases[idx]['ผู้อนุมัติ'] = approveUsers[password]; }
+    closePrModal();
+    renderPrStats();
+    renderPurchaseTable();
+    return;
+  }
+  try {
+    const params = new URLSearchParams({ action:'updatePurchase', prId:currentPR['เลขที่ PR'], status, remark, password });
+    const res = await fetch(`${API_URL}?${params}`);
+    const json = await res.json();
+    if (json.status === 'ok') {
+      closePrModal();
+      await loadPurchases();
+    } else {
+      showFieldMsg(msg, '❌ ' + (json.message || 'เกิดข้อผิดพลาด'), false);
+    }
+  } catch(e) {
+    showFieldMsg(msg, 'เกิดข้อผิดพลาด: ' + e.message, false);
+  }
+}
+
+function getDemoPurchases() {
+  return [
+    { 'เลขที่ PR':'PR-250525-X1A', 'วันที่ขอ':'25/5/2568 10:00', 'ผู้ขอ':'วิชาญ เครื่องดี', 'แผนก':'บำรุงรักษา', 'ประเภท':'อะไหล่เครื่องจักร', 'รายการ':'ไส้กรองลม Air Compressor', 'จำนวน':4, 'หน่วย':'ชิ้น', 'ราคา/หน่วย':850, 'รวมเงิน':3400, 'เหตุผล/ความจำเป็น':'เปลี่ยนไส้กรองตามรอบ AIR-COMP-01 ที่อุดตัน', 'อ้างอิงใบแจ้งซ่อม':'MR-250525-A1B', 'สถานะ':'รออนุมัติ', 'ผู้อนุมัติ':'' },
+    { 'เลขที่ PR':'PR-250524-Y2B', 'วันที่ขอ':'24/5/2568 15:30', 'ผู้ขอ':'สมหมาย แข็งแรง', 'แผนก':'คลังสินค้า', 'ประเภท':'วัสดุสิ้นเปลือง', 'รายการ':'สายพาน Conveyor B-200', 'จำนวน':2, 'หน่วย':'เส้น', 'ราคา/หน่วย':4500, 'รวมเงิน':9000, 'เหตุผล/ความจำเป็น':'สำรองไว้เปลี่ยนสายพานที่สึก', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'อนุมัติแล้ว', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
+    { 'เลขที่ PR':'PR-250523-Z3C', 'วันที่ขอ':'23/5/2568 09:00', 'ผู้ขอ':'ปวีณา รักงาน', 'แผนก':'QC / ตรวจสอบ', 'ประเภท':'เครื่องมือ / อุปกรณ์', 'รายการ':'เกจวัดแรงดัน 0-10 bar', 'จำนวน':3, 'หน่วย':'ตัว', 'ราคา/หน่วย':1200, 'รวมเงิน':3600, 'เหตุผล/ความจำเป็น':'เครื่องมือวัดเดิมเสีย', 'อ้างอิงใบแจ้งซ่อม':'', 'สถานะ':'ได้รับของ', 'ผู้อนุมัติ':'หัวหน้าฝ่าย' },
+  ];
+}
+
+// =============================================
+// Demo data (ใช้ทดสอบก่อน connect จริง)
+// =============================================
+function getDemoData() {
+  return [
+    { 'เลขที่ใบแจ้งซ่อม':'MR-250525-A1B', 'วันที่แจ้ง':'25/5/2568 08:32', 'ผู้แจ้ง':'สมชาย ใจดี', 'แผนก':'ผลิต A', 'รหัสเครื่องจักร':'AIR-COMP-01', 'ตำแหน่ง':'อาคาร A ชั้น 1', 'ประเภทปัญหา':'แรงดัน/อุณหภูมิผิดปกติ', 'รายละเอียดอาการ':'แรงดันลมตกต่ำกว่า 6 bar อย่างต่อเนื่อง กระทบไลน์ผลิต A ทั้งหมด', 'ความเร่งด่วน':'เร่งด่วน! — หยุดสายการผลิต', 'สถานะ':'กำลังดำเนินการ', 'ช่างรับผิดชอบ':'วิชาญ เครื่องดี', 'วันที่รับงาน':'25/5/2568 09:15', 'วันที่แล้วเสร็จ':'' },
+    { 'เลขที่ใบแจ้งซ่อม':'MR-250524-C2D', 'วันที่แจ้ง':'24/5/2568 14:10', 'ผู้แจ้ง':'รุ่งนภา สดใส', 'แผนก':'ผลิต B', 'รหัสเครื่องจักร':'CNC-001', 'ตำแหน่ง':'อาคาร B โรงผลิต', 'ประเภทปัญหา':'เสียงผิดปกติ/สั่น', 'รายละเอียดอาการ':'มีเสียงดังผิดปกติจากแกน Z ขณะ machining', 'ความเร่งด่วน':'ปานกลาง — กระทบบางส่วน', 'สถานะ':'รอดำเนินการ', 'ช่างรับผิดชอบ':'', 'วันที่รับงาน':'', 'วันที่แล้วเสร็จ':'' },
+    { 'เลขที่ใบแจ้งซ่อม':'MR-250523-E3F', 'วันที่แจ้ง':'23/5/2568 09:45', 'ผู้แจ้ง':'ชาญวิท มั่นคง', 'แผนก':'คลังสินค้า', 'รหัสเครื่องจักร':'CONV-001', 'ตำแหน่ง':'อาคาร C คลังสินค้า', 'ประเภทปัญหา':'สายพาน/ตัวขับเคลื่อน', 'รายละเอียดอาการ':'สายพานลื่น ต้องหยุดเดินเครื่องบ่อย', 'ความเร่งด่วน':'ต่ำ — ไม่กระทบการผลิต', 'สถานะ':'แล้วเสร็จ', 'ช่างรับผิดชอบ':'สมหมาย แข็งแรง', 'วันที่รับงาน':'23/5/2568 13:00', 'วันที่แล้วเสร็จ':'24/5/2568 10:30' },
+    { 'เลขที่ใบแจ้งซ่อม':'MR-250522-G4H', 'วันที่แจ้ง':'22/5/2568 16:00', 'ผู้แจ้ง':'ปวีณา รักงาน', 'แผนก':'QC / ตรวจสอบ', 'รหัสเครื่องจักร':'PUMP-001', 'ตำแหน่ง':'ห้องเครื่อง/Utility', 'ประเภทปัญหา':'น้ำมัน/ของเหลวรั่ว', 'รายละเอียดอาการ':'พบคราบน้ำมันใต้ปั๊ม ปริมาณมาก', 'ความเร่งด่วน':'เร่งด่วน! — หยุดสายการผลิต', 'สถานะ':'แล้วเสร็จ', 'ช่างรับผิดชอบ':'วิชาญ เครื่องดี', 'วันที่รับงาน':'22/5/2568 16:30', 'วันที่แล้วเสร็จ':'23/5/2568 08:00' },
+  ];
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>แจ้งซ่อมเครื่องจักร — OXISO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #22223b;
+    --border: #2d2d4e;
+    --accent: #4cc9f0;
+    --accent2: #f72585;
+    --warn: #fca311;
+    --success: #06d6a0;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --radius: 12px;
+    --font: 'IBM Plex Sans Thai', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #4361ee);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .ticket-id {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(76,201,240,0.08);
+    border: 1px solid rgba(76,201,240,0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  /* Steps bar */
+  .steps {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+  }
+  .step {
+    flex: 1; text-align: center;
+    padding: 12px 4px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .step.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .step.done { color: var(--success); border-bottom-color: var(--success); }
+  .step-num {
+    display: block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--border);
+    margin: 0 auto 4px;
+    font-size: 11px;
+    line-height: 22px;
+  }
+  .step.active .step-num { background: var(--accent); color: #000; }
+  .step.done .step-num { background: var(--success); color: #000; }
+
+  /* Main content */
+  .container { padding: 20px 16px; max-width: 560px; margin: 0 auto; }
+
+  /* Section panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .panel.active { display: block; }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Form fields */
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  label .req { color: var(--accent2); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="tel"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: var(--font);
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(76,201,240,0.1);
+  }
+  input::placeholder, textarea::placeholder { color: #555570; }
+  textarea { resize: none; min-height: 90px; line-height: 1.5; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+  /* Priority chips */
+  .priority-group { display: flex; gap: 8px; }
+  .priority-chip {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--muted);
+  }
+  .priority-chip span { display: block; font-size: 20px; margin-bottom: 4px; }
+  .priority-chip:hover { border-color: #555580; }
+  .priority-chip.selected-low { border-color: var(--success); background: rgba(6,214,160,0.08); color: var(--success); }
+  .priority-chip.selected-med { border-color: var(--warn); background: rgba(252,163,17,0.08); color: var(--warn); }
+  .priority-chip.selected-high { border-color: var(--accent2); background: rgba(247,37,133,0.08); color: var(--accent2); }
+
+  /* Photo capture */
+  .photo-zone {
+    display: block;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-zone:hover { border-color: var(--accent); background: rgba(76,201,240,0.04); }
+  .photo-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .photo-icon { font-size: 36px; margin-bottom: 8px; }
+  .photo-zone p { font-size: 14px; color: var(--muted); }
+  .photo-zone small { font-size: 11px; color: #555570; }
+
+  .photo-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .preview-item {
+    position: relative;
+    width: 72px; height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-item .remove {
+    position: absolute;
+    top: 2px; right: 2px;
+    background: rgba(0,0,0,0.7);
+    border: none;
+    color: #fff;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-count {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--accent);
+    text-align: center;
+  }
+
+  /* Navigation buttons */
+  .nav-buttons { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-back {
+    flex: 0 0 80px;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-back:hover { background: var(--surface2); }
+  .btn-next {
+    flex: 1;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #4361ee, var(--accent));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-next:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-next:active { transform: translateY(0); }
+  .btn-submit {
+    flex: 1;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #06d6a0, #0cb87a);
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* Review panel */
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    gap: 12px;
+  }
+  .review-row:last-child { border-bottom: none; }
+  .review-label { color: var(--muted); flex-shrink: 0; }
+  .review-value { text-align: right; font-weight: 500; word-break: break-word; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-low { background: rgba(6,214,160,0.15); color: var(--success); }
+  .badge-med { background: rgba(252,163,17,0.15); color: var(--warn); }
+  .badge-high { background: rgba(247,37,133,0.15); color: var(--accent2); }
+
+  /* Success screen */
+  .success-screen {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .success-anim {
+    width: 80px; height: 80px;
+    background: rgba(6,214,160,0.1);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+    animation: pop 0.4s ease;
+  }
+  @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .ticket-big {
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--accent);
+    background: rgba(76,201,240,0.08);
+    border: 1px solid rgba(76,201,240,0.2);
+    padding: 12px 24px;
+    border-radius: 10px;
+    margin: 16px auto;
+    display: inline-block;
+    letter-spacing: 0.05em;
+  }
+  .btn-new {
+    margin-top: 20px;
+    padding: 12px 32px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--font);
+    cursor: pointer;
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,15,26,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error msg */
+  .error-msg {
+    display: none;
+    background: rgba(247,37,133,0.1);
+    border: 1px solid rgba(247,37,133,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-top: 12px;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span style="color:var(--muted);font-size:14px">กำลังส่งข้อมูล...</span>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-icon">🔧</div>
+  <div>
+    <div class="header-title">แจ้งซ่อมเครื่องจักร</div>
+    <div class="header-sub">OXISO Maintenance System</div>
+  </div>
+  <div class="ticket-id" id="ticketDisplay">---</div>
+</div>
+
+<!-- Steps -->
+<div class="steps">
+  <div class="step active" id="step-tab-1">
+    <span class="step-num">1</span>ข้อมูลงาน
+  </div>
+  <div class="step" id="step-tab-2">
+    <span class="step-num">2</span>รูปภาพ
+  </div>
+  <div class="step" id="step-tab-3">
+    <span class="step-num">3</span>ตรวจสอบ
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ===== STEP 1: Job Info ===== -->
+  <div class="panel active" id="step1">
+
+    <div class="panel-title">📋 ข้อมูลผู้แจ้ง</div>
+
+    <div class="field">
+      <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+      <input type="text" id="reporterName" placeholder="เช่น สมชาย ใจดี">
+    </div>
+    <div class="field">
+      <label>แผนก / ส่วนงาน <span class="req">*</span></label>
+      <select id="department">
+        <option value="">-- เลือกแผนก --</option>
+        <option>ผลิต A</option>
+        <option>ผลิต B</option>
+        <option>ผลิต C</option>
+        <option>QC / ตรวจสอบ</option>
+        <option>บำรุงรักษา</option>
+        <option>คลังสินค้า</option>
+        <option>อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>เบอร์โทร / ไลน์</label>
+      <input type="tel" id="phone" placeholder="สำหรับติดต่อกลับ">
+    </div>
+
+    <div class="panel-title" style="margin-top:20px">⚙️ ข้อมูลเครื่องจักร</div>
+
+    <div class="field">
+      <label>เครื่องจักร / รหัสเครื่อง <span class="req">*</span></label>
+      <select id="machineId">
+        <option value="">-- เลือกเครื่องจักร --</option>
+        <option>AIR-COMP-01 — Air Compressor หลัก</option>
+        <option>AIR-COMP-02 — Air Compressor สำรอง</option>
+        <option>CNC-001 — เครื่อง CNC ไลน์ A</option>
+        <option>CNC-002 — เครื่อง CNC ไลน์ B</option>
+        <option>CONV-001 — สายพาน Conveyor</option>
+        <option>PUMP-001 — ปั๊มน้ำ</option>
+        <option>HEAT-001 — เตาอบ</option>
+        <option>อื่นๆ (ระบุด้านล่าง)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ตำแหน่ง / พื้นที่ <span class="req">*</span></label>
+      <select id="location">
+        <option value="">-- เลือกพื้นที่ --</option>
+        <option>อาคาร A — ชั้น 1</option>
+        <option>อาคาร A — ชั้น 2</option>
+        <option>อาคาร B — โรงผลิต</option>
+        <option>อาคาร C — คลังสินค้า</option>
+        <option>ลานจอดรถ / กลางแจ้ง</option>
+        <option>ห้องเครื่อง / Utility</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ประเภทปัญหา <span class="req">*</span></label>
+      <select id="problemType">
+        <option value="">-- เลือกประเภท --</option>
+        <option>เครื่องไม่ทำงาน / หยุดกะทันหัน</option>
+        <option>เสียงผิดปกติ / สั่น</option>
+        <option>น้ำมัน / ของเหลวรั่ว</option>
+        <option>แรงดัน / อุณหภูมิผิดปกติ</option>
+        <option>ระบบไฟฟ้า / วงจร</option>
+        <option>สายพาน / ตัวขับเคลื่อน</option>
+        <option>อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>รายละเอียดอาการ <span class="req">*</span></label>
+      <textarea id="description" placeholder="อธิบายอาการเครื่องที่ผิดปกติ, เหตุการณ์ที่เกิดขึ้น, ช่วงเวลาที่พบ..."></textarea>
+    </div>
+
+    <div class="panel-title" style="margin-top:20px">🚨 ความเร่งด่วน</div>
+    <div class="priority-group">
+      <button class="priority-chip" onclick="selectPriority('low')" id="chip-low">
+        <span>🟢</span>ต่ำ<br><small style="font-size:10px;color:inherit">ไม่กระทบการผลิต</small>
+      </button>
+      <button class="priority-chip" onclick="selectPriority('med')" id="chip-med">
+        <span>🟡</span>ปานกลาง<br><small style="font-size:10px;color:inherit">กระทบบางส่วน</small>
+      </button>
+      <button class="priority-chip" onclick="selectPriority('high')" id="chip-high">
+        <span>🔴</span>เร่งด่วน!<br><small style="font-size:10px;color:inherit">หยุดสายการผลิต</small>
+      </button>
+    </div>
+
+    <div class="error-msg" id="err1">⚠️ กรุณากรอกข้อมูลที่มี * ให้ครบ และเลือกความเร่งด่วน</div>
+
+    <div class="nav-buttons">
+      <button class="btn-next" onclick="goStep(2)">ถัดไป: อัปโหลดรูปภาพ →</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: Photos ===== -->
+  <div class="panel" id="step2">
+
+    <div class="panel-title">📷 รูปภาพหลักฐาน</div>
+
+    <label class="photo-zone" for="photoInput">
+      <input type="file" id="photoInput" accept="image/*" capture="camera" multiple onchange="handlePhotos(this)" style="display:none">
+      <div class="photo-icon">📷</div>
+      <p>แตะเพื่อถ่ายรูป หรือเลือกจากอัลบั้ม</p>
+      <small>รองรับ JPG, PNG — สูงสุด 5 รูป</small>
+    </label>
+
+    <div class="photo-preview" id="photoPreview"></div>
+    <div class="photo-count" id="photoCount"></div>
+
+    <div class="panel-title" style="margin-top:20px">📝 หมายเหตุเพิ่มเติม</div>
+    <div class="field">
+      <textarea id="notes" placeholder="ข้อมูลเพิ่มเติม เช่น เคยซ่อมมาก่อน, อาการก่อนหน้า..." style="min-height:70px"></textarea>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goStep(1)">← กลับ</button>
+      <button class="btn-next" onclick="goStep(3)">ตรวจสอบและส่ง →</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: Review ===== -->
+  <div class="panel" id="step3">
+
+    <div class="panel-title">✅ ตรวจสอบข้อมูล</div>
+
+    <div id="reviewContent"></div>
+
+    <div class="error-msg" id="err3"></div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="goStep(2)">← แก้ไข</button>
+      <button class="btn-submit" onclick="submitForm()">📤 ส่งใบแจ้งซ่อม</button>
+    </div>
+  </div>
+
+  <!-- ===== SUCCESS ===== -->
+  <div class="panel" id="stepSuccess">
+    <div class="success-screen">
+      <div class="success-anim">✅</div>
+      <h2 style="font-size:20px;margin-bottom:8px">ส่งใบแจ้งซ่อมแล้ว!</h2>
+      <p style="color:var(--muted);font-size:14px">เลขที่ใบแจ้งซ่อมของคุณ</p>
+      <div class="ticket-big" id="successTicket"></div>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px">ช่างซ่อมจะได้รับแจ้งทาง LINE ทันที<br>คุณสามารถติดตามสถานะได้ที่ Dashboard</p>
+      <button class="btn-new" onclick="resetForm()">+ แจ้งซ่อมรายการใหม่</button>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script>
+// =============================================
+// CONFIG — แก้ไข URL ของ Apps Script ที่นี่
+// =============================================
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzC4qLsJj1uX6Tfeu6_iaW9MzECdnLbJoRbY8p5jeBx7MQXRKjoPf-KPl3z8auE0NXe/exec';
+
+// State
+let currentStep = 1;
+let selectedPriority = '';
+let photoFiles = [];
+let ticketId = generateTicketId();
+
+// Init
+document.getElementById('ticketDisplay').textContent = ticketId;
+loadOptions();  // ดึงรายการ dropdown จาก Google Sheet
+
+// =============================================
+// โหลดรายการ dropdown จาก Sheet "ตัวเลือก"
+// ถ้าดึงไม่ได้ ใช้รายการเดิมใน HTML เป็น fallback
+// =============================================
+// แมป: ชื่อคอลัมน์ใน Sheet → id ของ <select> ในฟอร์ม
+const OPTION_MAP = {
+  'แผนก':        'department',
+  'เครื่องจักร':  'machineId',
+  'พื้นที่':      'location',
+  'ประเภทปัญหา':  'problemType',
+};
+// ข้อความบรรทัดแรกของแต่ละ dropdown (placeholder)
+const PLACEHOLDER = {
+  'department':  '-- เลือกแผนก --',
+  'machineId':   '-- เลือกเครื่องจักร --',
+  'location':    '-- เลือกพื้นที่ --',
+  'problemType': '-- เลือกประเภท --',
+};
+
+async function loadOptions() {
+  // Demo mode: ยังไม่ได้ใส่ URL → ใช้รายการเดิมใน HTML
+  if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') return;
+
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=options`);
+    const opts = await res.json();
+    if (!opts || Object.keys(opts).length === 0) return; // ไม่มีข้อมูล → คงรายการเดิม
+
+    Object.entries(OPTION_MAP).forEach(([col, selectId]) => {
+      const list = opts[col];
+      if (!list || !list.length) return; // คอลัมน์นี้ว่าง → คงรายการเดิมไว้
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      sel.innerHTML =
+        `<option value="">${PLACEHOLDER[selectId] || '-- เลือก --'}</option>` +
+        list.map(v => `<option>${v}</option>`).join('');
+    });
+  } catch(e) {
+    console.warn('โหลดรายการ dropdown ไม่สำเร็จ ใช้รายการเดิมแทน:', e);
+  }
+}
+
+function generateTicketId() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const rnd = Math.random().toString(36).slice(2,5).toUpperCase();
+  return `MR-${yy}${mm}${dd}-${rnd}`;
+}
+
+function selectPriority(level) {
+  selectedPriority = level;
+  ['low','med','high'].forEach(l => {
+    const chip = document.getElementById('chip-'+l);
+    chip.className = 'priority-chip';
+    if(l === level) chip.classList.add('selected-'+l);
+  });
+}
+
+function goStep(n) {
+  if(n > currentStep && !validateStep(currentStep)) return;
+  document.getElementById('step'+currentStep).classList.remove('active');
+  document.getElementById('step-tab-'+currentStep)?.classList.remove('active');
+  document.getElementById('step-tab-'+currentStep)?.classList.add('done');
+  currentStep = n;
+  const panel = document.getElementById('step'+n);
+  if(panel) panel.classList.add('active');
+  const tab = document.getElementById('step-tab-'+n);
+  if(tab) { tab.classList.remove('done'); tab.classList.add('active'); }
+  if(n === 3) buildReview();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function validateStep(n) {
+  if(n === 1) {
+    const name = document.getElementById('reporterName').value.trim();
+    const dept = document.getElementById('department').value;
+    const machine = document.getElementById('machineId').value;
+    const loc = document.getElementById('location').value;
+    const prob = document.getElementById('problemType').value;
+    const desc = document.getElementById('description').value.trim();
+    if(!name || !dept || !machine || !loc || !prob || !desc || !selectedPriority) {
+      document.getElementById('err1').classList.add('show');
+      return false;
+    }
+    document.getElementById('err1').classList.remove('show');
+  }
+  return true;
+}
+
+function handlePhotos(input) {
+  const files = Array.from(input.files);
+  const remaining = 5 - photoFiles.length;
+  const toAdd = files.slice(0, remaining);
+  toAdd.forEach(f => photoFiles.push(f));
+  renderPreviews();
+}
+
+function renderPreviews() {
+  const container = document.getElementById('photoPreview');
+  container.innerHTML = '';
+  photoFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    div.innerHTML = `<img src="${url}" alt="รูป ${i+1}">
+      <button class="remove" onclick="removePhoto(${i})">✕</button>`;
+    container.appendChild(div);
+  });
+  const cnt = document.getElementById('photoCount');
+  cnt.textContent = photoFiles.length > 0 ? `เลือกแล้ว ${photoFiles.length}/5 รูป` : '';
+}
+
+function removePhoto(i) {
+  photoFiles.splice(i, 1);
+  renderPreviews();
+}
+
+const priorityLabels = { low:'ต่ำ — ไม่กระทบการผลิต', med:'ปานกลาง — กระทบบางส่วน', high:'เร่งด่วน! — หยุดสายการผลิต' };
+const priorityBadge = { low:'badge-low', med:'badge-med', high:'badge-high' };
+
+function buildReview() {
+  const rows = [
+    ['เลขที่ใบแจ้งซ่อม', `<span style="font-family:var(--mono);color:var(--accent)">${ticketId}</span>`],
+    ['ผู้แจ้ง', document.getElementById('reporterName').value],
+    ['แผนก', document.getElementById('department').value],
+    ['เบอร์โทร', document.getElementById('phone').value || '-'],
+    ['เครื่องจักร', document.getElementById('machineId').value],
+    ['ตำแหน่ง', document.getElementById('location').value],
+    ['ประเภทปัญหา', document.getElementById('problemType').value],
+    ['อาการ', document.getElementById('description').value],
+    ['ความเร่งด่วน', `<span class="badge ${priorityBadge[selectedPriority]}">${priorityLabels[selectedPriority]}</span>`],
+    ['รูปภาพ', `${photoFiles.length} รูป`],
+    ['หมายเหตุ', document.getElementById('notes').value || '-'],
+  ];
+  document.getElementById('reviewContent').innerHTML = rows.map(([l,v]) => `
+    <div class="review-row">
+      <span class="review-label">${l}</span>
+      <span class="review-value">${v}</span>
+    </div>`).join('');
+}
+
+async function submitForm() {
+  document.getElementById('loadingOverlay').classList.add('show');
+
+  // Encode photos as base64
+  const photoBase64List = [];
+  for(const file of photoFiles) {
+    const b64 = await toBase64(file);
+    photoBase64List.push({ name: file.name, data: b64 });
+  }
+
+  // รวมข้อมูลเป็น object
+  const payload = {
+    ticketId:     ticketId,
+    timestamp:    new Date().toLocaleString('th-TH'),
+    reporterName: document.getElementById('reporterName').value,
+    department:   document.getElementById('department').value,
+    phone:        document.getElementById('phone').value,
+    machineId:    document.getElementById('machineId').value,
+    location:     document.getElementById('location').value,
+    problemType:  document.getElementById('problemType').value,
+    description:  document.getElementById('description').value,
+    priority:     priorityLabels[selectedPriority],
+    notes:        document.getElementById('notes').value,
+    status:       'รอดำเนินการ',
+    photos:       JSON.stringify(photoBase64List),
+  };
+
+  try {
+    // Demo mode: ถ้ายังไม่ได้ใส่ URL จริง ให้จำลองสำเร็จ
+    if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      await new Promise(r => setTimeout(r, 1800)); // simulate delay
+      showSuccess();
+      return;
+    }
+    // ส่งเป็น JSON (text/plain เลี่ยง CORS preflight) — เก็บ base64 รูปได้ครบไม่เพี้ยน
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    const json = JSON.parse(text);
+    if(json.status === 'ok') showSuccess();
+    else throw new Error(json.message || 'Error');
+  } catch(e) {
+    document.getElementById('loadingOverlay').classList.remove('show');
+    const err = document.getElementById('err3');
+    err.textContent = '⚠️ เกิดข้อผิดพลาด: ' + e.message + ' — กรุณาลองใหม่หรือแจ้ง IT';
+    err.classList.add('show');
+  }
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function showSuccess() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+  document.getElementById('step3').classList.remove('active');
+  ['step-tab-1','step-tab-2','step-tab-3'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) { el.classList.remove('active'); el.classList.add('done'); }
+  });
+  document.getElementById('successTicket').textContent = ticketId;
+  document.getElementById('stepSuccess').classList.add('active');
+}
+
+function resetForm() {
+  location.reload();
+}
+</script>
+</body>
+</html>
