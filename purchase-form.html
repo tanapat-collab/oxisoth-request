@@ -190,8 +190,9 @@
       </div>
     </div>
     <div class="field">
-      <label>ราคาประมาณ/หน่วย (บาท)</label>
-      <input type="number" id="unitPrice" placeholder="0" min="0" oninput="calcTotal()">
+      <label>ราคาประมาณ/หน่วย (บาท) <span style="font-size:11px;color:var(--muted);font-weight:normal">— ถ้าไม่ทราบ ปล่อยว่างได้</span></label>
+      <input type="number" id="unitPrice" placeholder="ปล่อยว่างถ้าไม่ทราบราคา" min="0" oninput="calcTotal()">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">💡 จัดซื้อจะตรวจสอบราคาให้หากไม่ระบุ</div>
     </div>
     <div class="total-box">
       <span class="lbl">ยอดรวมประมาณ</span>
@@ -264,6 +265,7 @@ let prId = generatePrId();
 document.getElementById('ticketDisplay').textContent = prId;
 loadOptions();
 detectInAppBrowser();
+calcTotal();  // ตั้งสถานะเริ่มต้นของยอดรวม
 
 // แมปคอลัมน์ Sheet → id ของ select
 const OPTION_MAP = { 'แผนก': 'department' };
@@ -319,9 +321,17 @@ function generatePrId() {
 
 function calcTotal() {
   const qty = parseFloat(document.getElementById('quantity').value) || 0;
-  const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const priceStr = document.getElementById('unitPrice').value.trim();
+  const display = document.getElementById('totalDisplay');
+  if (!priceStr) {
+    display.textContent = 'รอตรวจสอบราคา';
+    display.style.fontSize = '15px';
+    return;
+  }
+  const price = parseFloat(priceStr) || 0;
   const total = qty * price;
-  document.getElementById('totalDisplay').textContent = '฿' + total.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+  display.style.fontSize = '';
+  display.textContent = '฿' + total.toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 2});
 }
 
 function goStep(n) {
@@ -380,8 +390,12 @@ function removePhoto(i) { photoFiles.splice(i, 1); renderPreviews(); }
 
 function buildReview() {
   const qty = parseFloat(document.getElementById('quantity').value) || 0;
-  const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const priceStr = document.getElementById('unitPrice').value.trim();
+  const hasPrice = priceStr !== '';
+  const price = parseFloat(priceStr) || 0;
   const total = qty * price;
+  const priceCell = hasPrice ? ('฿' + price.toLocaleString('th-TH')) : '<span style="color:var(--muted);font-style:italic">รอจัดซื้อตรวจสอบ</span>';
+  const totalCell = hasPrice ? `<b style="color:var(--accent)">฿${total.toLocaleString('th-TH')}</b>` : '<span style="color:var(--muted);font-style:italic">รอตรวจสอบราคา</span>';
   const rows = [
     ['เลขที่ PR', `<span style="font-family:var(--mono);color:var(--accent)">${prId}</span>`],
     ['ผู้ขอ', document.getElementById('reporterName').value],
@@ -390,8 +404,8 @@ function buildReview() {
     ['อ้างอิงใบแจ้งซ่อม', document.getElementById('repairRef').value || '-'],
     ['รายการ', document.getElementById('itemName').value],
     ['จำนวน', `${qty} ${document.getElementById('unit').value}`],
-    ['ราคา/หน่วย', '฿' + price.toLocaleString('th-TH')],
-    ['ยอดรวม', `<b style="color:var(--accent)">฿${total.toLocaleString('th-TH')}</b>`],
+    ['ราคา/หน่วย', priceCell],
+    ['ยอดรวม', totalCell],
     ['เหตุผล', document.getElementById('reason').value],
     ['รูปภาพ', `${photoFiles.length} รูป`],
     ['หมายเหตุ', document.getElementById('notes').value || '-'],

@@ -616,13 +616,18 @@
         <option>ไม่อนุมัติ</option>
       </select>
     </div>
-    <div class="modal-field">
-      <label>หมายเหตุ</label>
-      <textarea id="prUpdateRemark" placeholder="เหตุผลการอนุมัติ/ไม่อนุมัติ..."></textarea>
+    <div class="modal-field" id="prPriceField">
+      <label>ราคา/หน่วย (บาท) <span style="font-size:11px;color:var(--muted);font-weight:normal">— แก้ได้ก่อนเปิด PR เท่านั้น</span></label>
+      <input type="number" id="prUpdatePrice" placeholder="ปล่อยว่างถ้าไม่ต้องการแก้" min="0" step="0.01">
+      <div id="prPriceHint" style="font-size:12px;margin-top:6px;color:var(--muted)"></div>
     </div>
     <div class="modal-field">
-      <label>รหัสผ่านผู้อนุมัติ <span style="color:#f72585">*</span></label>
-      <input type="password" id="prUpdatePassword" placeholder="เฉพาะหัวหน้าที่มีสิทธิ์อนุมัติ" autocomplete="off">
+      <label>หมายเหตุ</label>
+      <textarea id="prUpdateRemark" placeholder="เหตุผลการดำเนินการ..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>รหัสผ่านผู้ดำเนินการ <span style="color:#f72585">*</span></label>
+      <input type="password" id="prUpdatePassword" placeholder="กรอกรหัสของคุณ" autocomplete="off">
       <div id="prUpdateMsg" style="font-size:12px;margin-top:6px;display:none"></div>
     </div>
     <div style="display:flex;gap:10px">
@@ -828,10 +833,15 @@ async function saveUpdate() {
     return;
   }
 
-  // Demo mode — รหัสตัวอย่าง: 1234/5678 = ช่าง, 9999 = หัวหน้า
+  // Demo mode — รหัสตัวอย่าง: 1234/5678 = พนักงาน, 9999 = หัวหน้างาน
   if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
     const demoUsers = { '1234':'วิชาญ เครื่องดี', '5678':'สมหมาย แข็งแรง', '9999':'คุณทนภัทร' };
+    const headUsers = { '9999':'คุณทนภัทร' };
     if (!demoUsers[password]) { showFieldMsg(msg, '❌ รหัสผ่านไม่ถูกต้อง', false); return; }
+    if (status === 'ยกเลิก' && !headUsers[password]) {
+      showFieldMsg(msg, '❌ สถานะ "ยกเลิก" ต้องให้หัวหน้างานดำเนินการ (ลองรหัส 9999)', false);
+      return;
+    }
     const idx = allTickets.findIndex(t => t['เลขที่ใบแจ้งซ่อม'] === currentTicket['เลขที่ใบแจ้งซ่อม']);
     if (idx >= 0) {
       allTickets[idx]['สถานะ'] = status;
@@ -1002,6 +1012,22 @@ function openPR(id) {
   document.getElementById('prUpdateRemark').value = '';
   document.getElementById('prUpdatePassword').value = '';
   document.getElementById('prUpdateMsg').style.display = 'none';
+  // ตั้งค่าช่องราคา — ล็อกถ้าเปิด PR แล้ว
+  const PR_LOCKED = ['เปิด PR แล้ว', 'ส่ง PO แล้ว', 'ได้รับของ รอตรวจรับ', 'ตรวจรับสินค้าแล้ว', 'รับเข้าคลัง'];
+  const priceInput = document.getElementById('prUpdatePrice');
+  const priceHint = document.getElementById('prPriceHint');
+  const currentPrice = parseFloat(p['ราคา/หน่วย']) || 0;
+  priceInput.value = '';
+  priceInput.placeholder = currentPrice > 0 ? `ราคาปัจจุบัน: ${currentPrice.toLocaleString('th-TH')} (ปล่อยว่างถ้าไม่แก้)` : 'ยังไม่มีราคา — กรอกเพื่อระบุ';
+  if (PR_LOCKED.includes(p['สถานะ'])) {
+    priceInput.disabled = true;
+    priceHint.textContent = '🔒 ล็อก — เปิด PR แล้ว ไม่สามารถแก้ราคาได้';
+    priceHint.style.color = '#dc3545';
+  } else {
+    priceInput.disabled = false;
+    priceHint.textContent = currentPrice > 0 ? '' : '💡 ราคายังไม่ระบุ — สามารถกรอกได้';
+    priceHint.style.color = 'var(--muted)';
+  }
   document.getElementById('prModalOverlay').classList.add('show');
 }
 
@@ -1016,29 +1042,48 @@ async function savePrUpdate() {
   const status = document.getElementById('prUpdateStatus').value;
   const remark = document.getElementById('prUpdateRemark').value;
   const password = document.getElementById('prUpdatePassword').value.trim();
+  const unitPrice = document.getElementById('prUpdatePrice').value.trim();
   const msg = document.getElementById('prUpdateMsg');
 
   if (!password) { showFieldMsg(msg, 'กรุณากรอกรหัสผ่าน', false); return; }
 
-  // Demo mode — รหัส 1234/5678 = ทั่วไป, 9999 = หัวหน้า
+  // ตรวจฝั่ง client ก่อน: ถ้าใส่ราคา ต้องไม่ใช่สถานะที่ล็อกอยู่
+  const PR_LOCKED = ['เปิด PR แล้ว', 'ส่ง PO แล้ว', 'ได้รับของ รอตรวจรับ', 'ตรวจรับสินค้าแล้ว', 'รับเข้าคลัง'];
+  if (unitPrice !== '' && PR_LOCKED.includes(currentPR['สถานะ'])) {
+    showFieldMsg(msg, '❌ ไม่สามารถแก้ราคาได้หลังเปิด PR แล้ว', false);
+    return;
+  }
+
+  // Demo mode — รหัส 1234/5678 = พนักงาน, 9999 = หัวหน้างาน
   if (API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
     const allUsers = { '1234':'วิชาญ เครื่องดี', '5678':'สมหมาย แข็งแรง', '9999':'คุณทนภัทร' };
     const headUsers = { '9999':'คุณทนภัทร' };
-    const APPROVE_STATUSES = ['ตรวจสอบราคา', 'เปิด PR แล้ว', 'ไม่อนุมัติ'];
+    const HEAD_ONLY_STATUSES = ['เปิด PR แล้ว', 'ไม่อนุมัติ'];
     if (!allUsers[password]) { showFieldMsg(msg, '❌ รหัสผ่านไม่ถูกต้อง', false); return; }
-    if (APPROVE_STATUSES.includes(status) && !headUsers[password]) {
-      showFieldMsg(msg, '❌ สถานะนี้ต้องให้หัวหน้าอนุมัติ (ลองรหัส 9999)', false);
+    if (HEAD_ONLY_STATUSES.includes(status) && !headUsers[password]) {
+      showFieldMsg(msg, '❌ สถานะนี้ต้องให้หัวหน้างานดำเนินการ (ลองรหัส 9999)', false);
       return;
     }
     const idx = allPurchases.findIndex(p => p['เลขที่ PR'] === currentPR['เลขที่ PR']);
-    if (idx >= 0) { allPurchases[idx]['สถานะ'] = status; allPurchases[idx]['ผู้อนุมัติ'] = allUsers[password]; }
+    if (idx >= 0) {
+      allPurchases[idx]['สถานะ'] = status;
+      allPurchases[idx]['ผู้อนุมัติ'] = allUsers[password];
+      if (unitPrice !== '') {
+        const qty = parseFloat(allPurchases[idx]['จำนวน']) || 0;
+        const np = parseFloat(unitPrice) || 0;
+        allPurchases[idx]['ราคา/หน่วย'] = np;
+        allPurchases[idx]['รวมเงิน'] = qty * np;
+      }
+    }
     closePrModal();
     renderPrStats();
     renderPurchaseTable();
     return;
   }
   try {
-    const params = new URLSearchParams({ action:'updatePurchase', prId:currentPR['เลขที่ PR'], status, remark, password });
+    const payload = { action:'updatePurchase', prId:currentPR['เลขที่ PR'], status, remark, password };
+    if (unitPrice !== '') payload.unitPrice = unitPrice;
+    const params = new URLSearchParams(payload);
     const res = await fetch(`${API_URL}?${params}`);
     const json = await res.json();
     if (json.status === 'ok') {
